@@ -28,7 +28,7 @@ export const useNotifications = (
             const [token, prefs, badge, scheduledList] = await Promise.all([
                 notifications.getToken(),
                 notifications.getPreferences(),
-                // notifications.getBadge(),
+                notifications.getBadge(),
                 notifications.getScheduled(),
             ]);
 
