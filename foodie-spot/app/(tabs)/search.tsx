@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { RestaurantCard } from "@/components/restaurant-card";
@@ -6,10 +6,13 @@ import { Colors } from "@/constants/theme";
 import { restaurantAPI } from "@/services/api";
 import { Restaurant, SearchFilters } from "@/types";
 import { Filter, Search } from "lucide-react-native";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SearchScreen() {
+    const { colors } = useAppTheme();
+    const styles = useMemo(() => createStyles(colors), [colors]);
     const router = useRouter();
     const [query, setQuery] = useState('');
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -34,16 +37,17 @@ export default function SearchScreen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
                 <View style={styles.searchContainer}>
-                    <Search size={24} color={Colors.light.text} />
+                    <Search size={24} color={colors.text} />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Rechercher un restaurant"
+                        placeholderTextColor={colors.placeholder}
                         value={query}
                         onChangeText={setQuery}
                     />
                 </View>
                 <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilters(!showFilters)}>
-                    <Filter size={24} color={Colors.light.text} />
+                    <Filter size={24} color={colors.text} />
                 </TouchableOpacity>
             </View>
 
@@ -52,7 +56,7 @@ export default function SearchScreen() {
                     <View style={styles.filters}>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                             {['Burger', 'Pizza', 'Sushi', 'Healthy', 'Desserts'].map((cuisine) => (
-                                <TouchableOpacity key={cuisine} style={styles.filterChip}
+                                <TouchableOpacity key={cuisine} style={[styles.filterChip, filters.cuisine === cuisine && styles.filterChipActive]}
                                     onPress={() => setFilters({ ...filters, cuisine: filters.cuisine ? undefined : cuisine })}>
                                     <Text style={[styles.filterChipText, filters.cuisine === cuisine && styles.filterChipTextActive]}>{cuisine}</Text>
                                 </TouchableOpacity>
@@ -75,10 +79,10 @@ export default function SearchScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof Colors.light) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: 'row',
@@ -86,14 +90,14 @@ const styles = StyleSheet.create({
         gap: 12,
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+        borderBottomColor: colors.border,
     },
     searchContainer: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.cardMuted,
         paddingHorizontal: 16,
         paddingVertical: 16,
         borderRadius: 24,
@@ -101,6 +105,7 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 16,
+        color: colors.text,
     },
     filterButton: {
         padding: 8,
@@ -109,21 +114,24 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+        borderBottomColor: colors.border,
     },
     filterChip: {
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 20,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.cardMuted,
         marginRight: 8,
+    },
+    filterChipActive: {
+        backgroundColor: colors.accent,
     },
     filterChipText: {
         fontSize: 14,
-        color: '#666',
+        color: colors.mutedText,
     },
     filterChipTextActive: {
-        color: '#fff',
+        color: colors.card,
         fontWeight: '600',
     },
     content: {
@@ -132,7 +140,7 @@ const styles = StyleSheet.create({
     },
     resultsText: {
         fontSize: 14,
-        color: '#666',
+        color: colors.mutedText,
         marginBottom: 16,
     },
 });

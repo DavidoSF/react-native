@@ -2,11 +2,15 @@ import { OrderCard } from "@/components/order-card";
 import { orderAPI } from "@/services/api";
 import { Order } from "@/types";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { Colors } from "@/constants/theme";
 
 export default function OrdersScreen() {
+    const { colors } = useAppTheme();
+    const styles = useMemo(() => createStyles(colors), [colors]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -64,19 +68,21 @@ export default function OrdersScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof Colors.light) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f0f0f0',
+        backgroundColor: colors.background,
     },
     header: {
         padding: 16,
-        backgroundColor: '#f0f0f0',
+        backgroundColor: colors.background,
         borderBottomWidth: 1,
+        borderBottomColor: colors.border,
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
+        color: colors.text,
     },
     content: {
         flex: 1,
@@ -93,6 +99,6 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontSize: 16,
-        color: '#999',
+        color: colors.mutedText,
     }
 });

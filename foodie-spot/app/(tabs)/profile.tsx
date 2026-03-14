@@ -1,20 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { MapPin, Heart, ShoppingBag, Phone, Share2, Camera, ChevronRight, LogOut } from 'lucide-react-native';
+import { MapPin, Heart, ShoppingBag, Phone, Share2, Camera, ChevronRight, LogOut, Moon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { userAPI, uploadAPI } from '../../services/api';
 import type { User } from '../../types';
 import log from '../../services/logger';
-import auth from '@/services/auth';
-import  { useToast, ToastProvider } from '@/components/toast-provider';
+import  { useToast } from '@/components/toast-provider';
 import { useAuth } from '@/contexts/auth-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { useTheme } from '@/contexts/theme-context';
 
 export default function ProfileScreen() {
 
   const toast = useToast();
+  const { colors } = useAppTheme();
+  const { colorScheme, setPreference } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [user, setUser] = useState<User | null>(null);
   const { logout } = useAuth();
 
@@ -116,44 +120,54 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.menu}>
+          <View style={styles.menuItem}>
+            <Moon size={20} color={colors.mutedText} />
+            <Text style={styles.menuText}>Mode sombre</Text>
+            <Switch
+              value={colorScheme === 'dark'}
+              onValueChange={(value) => setPreference(value ? 'dark' : 'light')}
+              trackColor={{ false: colors.border, true: colors.tint }}
+              thumbColor={colorScheme === 'dark' ? colors.card : colors.background}
+            />
+          </View>
           <TouchableOpacity style={styles.menuItem}>
-            <MapPin size={20} color="#666" />
+            <MapPin size={20} color={colors.mutedText} />
             <Text style={styles.menuText}>Mes adresses</Text>
             <View style={styles.menuRight}>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{user?.addresses.length}</Text>
               </View>
-              <ChevronRight size={18} color="#ccc" />
+              <ChevronRight size={18} color={colors.placeholder} />
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(tabs)/favorites')}>
-            <Heart size={20} color="#666" />
+            <Heart size={20} color={colors.mutedText} />
             <Text style={styles.menuText}>Mes favoris</Text>
             <View style={styles.menuRight}>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{user?.favoriteRestaurants.length}</Text>
               </View>
-              <ChevronRight size={18} color="#ccc" />
+              <ChevronRight size={18} color={colors.placeholder} />
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(tabs)/orders')}>
-            <ShoppingBag size={20} color="#666" />
+            <ShoppingBag size={20} color={colors.mutedText} />
             <Text style={styles.menuText}>Historique</Text>
-            <ChevronRight size={18} color="#ccc" />
+            <ChevronRight size={18} color={colors.placeholder} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Support', 'Pour toute assistance, veuillez contacter notre support client ')}>
-            <Phone size={20} color="#666" />
+            <Phone size={20} color={colors.mutedText} />
             <Text style={styles.menuText}>Support</Text>
-            <ChevronRight size={18} color="#ccc" />
+            <ChevronRight size={18} color={colors.placeholder} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <Share2 size={20} color="#666" />
+            <Share2 size={20} color={colors.mutedText} />
             <Text style={styles.menuText}>Partager l'app</Text>
-            <ChevronRight size={18} color="#ccc" />
+            <ChevronRight size={18} color={colors.placeholder} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={handleLogout}>
@@ -207,48 +221,58 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.menu}>
+          <View style={styles.menuItem}>
+            <Moon size={20} color={colors.mutedText} />
+            <Text style={styles.menuText}>Mode sombre</Text>
+            <Switch
+              value={colorScheme === 'dark'}
+              onValueChange={(value) => setPreference(value ? 'dark' : 'light')}
+              trackColor={{ false: colors.border, true: colors.tint }}
+              thumbColor={colorScheme === 'dark' ? colors.card : colors.background}
+            />
+          </View>
           <TouchableOpacity style={styles.menuItem}>
-            <MapPin size={20} color="#666" />
+            <MapPin size={20} color={colors.mutedText} />
             <Text style={styles.menuText}>Mes adresses</Text>
             <View style={styles.menuRight}>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{user.addresses.length}</Text>
               </View>
-              <ChevronRight size={18} color="#ccc" />
+              <ChevronRight size={18} color={colors.placeholder} />
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(tabs)/favorites')}>
-            <Heart size={20} color="#666" />
+            <Heart size={20} color={colors.mutedText} />
             <Text style={styles.menuText}>Mes favoris</Text>
             <View style={styles.menuRight}>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{user.favoriteRestaurants.length}</Text>
               </View>
-              <ChevronRight size={18} color="#ccc" />
+              <ChevronRight size={18} color={colors.placeholder} />
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(tabs)/orders')}>
-            <ShoppingBag size={20} color="#666" />
+            <ShoppingBag size={20} color={colors.mutedText} />
             <Text style={styles.menuText}>Historique</Text>
-            <ChevronRight size={18} color="#ccc" />
+            <ChevronRight size={18} color={colors.placeholder} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <Phone size={20} color="#666" />
+            <Phone size={20} color={colors.mutedText} />
             <Text style={styles.menuText}>Support</Text>
-            <ChevronRight size={18} color="#ccc" />
+            <ChevronRight size={18} color={colors.placeholder} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
-            <Share2 size={20} color="#666" />
+            <Share2 size={20} color={colors.mutedText} />
             <Text style={styles.menuText}>Partager l'app</Text>
-            <ChevronRight size={18} color="#ccc" />
+            <ChevronRight size={18} color={colors.placeholder} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.menuItem, styles.logoutItem]} onPress={handleLogout}>
-            <LogOut size={20} color="#FF6B35" />
+            <LogOut size={20} color={colors.accent} />
             <Text style={[styles.menuText, styles.logoutText]}>Déconnexion</Text>
           </TouchableOpacity>
         </View>
@@ -257,10 +281,11 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof import('@/constants/theme').Colors.light) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   loading: {
     flex: 1,
@@ -287,14 +312,14 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FF6B35',
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.card,
   },
   cameraButton: {
     position: 'absolute',
@@ -303,29 +328,30 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.tint,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: colors.background,
   },
   name: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 4,
+    color: colors.text,
   },
   email: {
     fontSize: 14,
-    color: '#666',
+    color: colors.mutedText,
     marginBottom: 2,
   },
   phone: {
     fontSize: 12,
-    color: '#999',
+    color: colors.placeholder,
   },
   stats: {
     flexDirection: 'row',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.cardMuted,
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 12,
@@ -337,20 +363,20 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: colors.border,
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FF6B35',
+    color: colors.accent,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: colors.mutedText,
   },
   menu: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginHorizontal: 16,
     overflow: 'hidden',
@@ -360,12 +386,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.border,
   },
   menuText: {
     flex: 1,
     fontSize: 16,
     marginLeft: 12,
+    color: colors.text,
   },
   menuRight: {
     flexDirection: 'row',
@@ -373,23 +400,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   badge: {
-    backgroundColor: '#FFE5DB',
+    backgroundColor: colors.accent,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
   },
   badgeText: {
     fontSize: 12,
-    color: '#FF6B35',
+    color: colors.card,
     fontWeight: '600',
   },
   logoutItem: {
     borderBottomWidth: 0,
   },
   logoutText: {
-    color: '#FF6B35',
+    color: colors.accent,
     fontWeight: '600',
   },
 });
-
-

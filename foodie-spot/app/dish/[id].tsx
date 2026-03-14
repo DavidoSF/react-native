@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { restaurantAPI } from "@/services/api";
 import { Dish } from "@/types";
@@ -7,8 +7,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { ArrowLeft, Minus, Plus } from "lucide-react-native";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { Colors } from "@/constants/theme";
 
 export default function DishScreen() {
+    const { colors } = useAppTheme();
+    const styles = useMemo(() => createStyles(colors), [colors]);
     const { id } = useLocalSearchParams<{ id: string }>();
     const [dish, setDish] = useState<Dish | null>(null);
     const [quantity, setQuantity] = useState<number>(1);
@@ -38,7 +42,7 @@ export default function DishScreen() {
                 <View style={styles.imageWrapper}>
                     <Image source={{ uri: dish.image }} style={styles.image} />
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <ArrowLeft size={24} color="rgba(0,0,0)" />
+                        <ArrowLeft size={24} color={colors.text} />
                     </TouchableOpacity>
                 </View>
 
@@ -55,11 +59,11 @@ export default function DishScreen() {
                                 style={[styles.qtyButton, quantity === 1 && styles.qtyButtonDisabled]}
                                 onPress={() => setQuantity(Math.max(1, quantity - 1))}
                                 disabled={quantity === 1}>
-                                <Minus size={18} color={quantity === 1 ? '#000' : '#fff'} />
+                                <Minus size={18} color={quantity === 1 ? colors.text : colors.card} />
                             </ TouchableOpacity>
                             <Text style={styles.qtyValue}>{quantity}</Text>
                             <TouchableOpacity style={styles.qtyButton} onPress={() => setQuantity(quantity + 1)}>
-                                <Plus size={18} color="#fff" />
+                                <Plus size={18} color={colors.card} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -74,11 +78,11 @@ export default function DishScreen() {
 
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof Colors.light) => StyleSheet.create({
     container: {
         flex: 1,
         marginTop: -100,
-        backgroundColor: '#fff',
+        backgroundColor: colors.background,
     },
     loading: {
         flex: 1,
@@ -99,7 +103,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: 'rgba(255,255,255)',
+        backgroundColor: colors.card,
         padding: 8,
         alignItems: 'center',
         justifyContent: 'center',
@@ -111,15 +115,16 @@ const styles = StyleSheet.create({
     name: {
         fontSize: 22,
         fontWeight: 'bold',
+        color: colors.text,
     },
     description: {
-        color: '#666',
+        color: colors.mutedText,
         lineHeight: 20,
     },
     price: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#FF6B35',
+        color: colors.accent,
     },
     quantity: {
         flexDirection: 'row',
@@ -137,21 +142,22 @@ const styles = StyleSheet.create({
         height: 36,
         borderRadius: 18,
         borderWidth: 1,
-        borderColor: '#e0e0e0',
+        borderColor: colors.border,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#FF6B35',
+        backgroundColor: colors.accent,
     },
     qtyButtonDisabled: {
-        borderColor: '#f0f0f0',
-        backgroundColor: '#ccc',
+        borderColor: colors.border,
+        backgroundColor: colors.cardMuted,
     },
     qtyValue: {
         fontSize: 16,
         fontWeight: '700',
+        color: colors.text,
     },
     addButton: {
-        backgroundColor: '#FF6B35',
+        backgroundColor: colors.accent,
         borderRadius: 12,
         padding: 16,
         alignItems: 'center',

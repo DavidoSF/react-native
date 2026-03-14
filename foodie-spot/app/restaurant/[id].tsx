@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Dish, Restaurant } from "@/types";
 import { router, useLocalSearchParams } from "expo-router";
@@ -7,8 +7,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { ArrowLeft, Clock, Heart, MapPin, Navigation, Phone, Share2, Star } from "lucide-react-native";
 import { DishCard } from "@/components/dish-card";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { Colors } from "@/constants/theme";
 
 export default function RestaurantScreen() {
+    const { colors } = useAppTheme();
+    const styles = useMemo(() => createStyles(colors), [colors]);
     const { id } = useLocalSearchParams<{ id: string }>();
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
     const [menu, setMenu] = useState<Dish[]>([]);
@@ -48,14 +52,14 @@ export default function RestaurantScreen() {
                 <View style={styles.imageContainer}>
                     <Image source={{ uri: restaurant?.image }} style={styles.image} />
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <ArrowLeft size={24} color="rgba(0,0,0)" />
+                        <ArrowLeft size={24} color={colors.text} />
                     </TouchableOpacity>
                     <View style={styles.headerActions}>
                         <TouchableOpacity style={styles.actionButton} onPress={handleToggleFavorite}>
-                            <Heart size={24} color={isFavorite ? '#FF6B35' : '#000'} fill={isFavorite ? '#FF6B35' : 'transparent'} />
+                            <Heart size={24} color={isFavorite ? colors.accent : colors.text} fill={isFavorite ? colors.accent : 'transparent'} />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.actionButton} onPress={handleToggleFavorite}>
-                            <Share2 size={18} color="#000" />
+                            <Share2 size={18} color={colors.text} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -70,7 +74,7 @@ export default function RestaurantScreen() {
                             </Text>
                         </View>
                         <View style={styles.metaItem}>
-                            <Clock size={16} color="#666"/>
+                            <Clock size={16} color={colors.mutedText}/>
                             <Text style={styles.metaText}>
                                 {typeof restaurant?.deliveryTime === 'object' && restaurant?.deliveryTime !== null
                                     ? `${(restaurant.deliveryTime as { min: number; max: number }).min}-${(restaurant.deliveryTime as { min: number; max: number }).max}` 
@@ -78,7 +82,7 @@ export default function RestaurantScreen() {
                             </Text>
                         </View>
                          <View style={styles.metaItem}>
-                            <MapPin size={16} color="#666"/>
+                            <MapPin size={16} color={colors.mutedText}/>
                             <Text style={styles.metaText}>
                                 {restaurant?.distance} km
                             </Text>
@@ -90,7 +94,7 @@ export default function RestaurantScreen() {
                             <Text style={styles.primaryButtonText}>Itinéraire</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.secondaryButton}>
-                            <Phone size={18} color="#666" />
+                            <Phone size={18} color={colors.mutedText} />
                             <Text style={styles.secondaryButtonText}>Appeler</Text>
                         </TouchableOpacity>
                     </View>
@@ -109,10 +113,10 @@ export default function RestaurantScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof Colors.light) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: colors.background,
         marginTop: -50,
     },
     imageContainer: {
@@ -128,7 +132,7 @@ const styles = StyleSheet.create({
         top: 50,
         left: 16,
         borderRadius: 20,
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         alignItems: 'center',
         justifyContent: 'center',
         padding: 8,
@@ -145,23 +149,24 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         alignItems: 'center',
         justifyContent: 'center',
     },
     info: {
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+        borderBottomColor: colors.border,
     },
     name: {
         fontSize: 24,
         fontWeight: 'bold',
         marginBottom: 4,
+        color: colors.text,
     },
     cuisine: {
         fontSize: 16,
-        color: '#666',
+        color: colors.mutedText,
         marginBottom: 12,
     },
     meta: {
@@ -176,7 +181,7 @@ const styles = StyleSheet.create({
     },
     metaText: {
         fontSize: 14,
-        color: '#666',
+        color: colors.mutedText,
     },
     actions: {
         flexDirection: 'row',
@@ -188,8 +193,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: '#FF6B35',
+        backgroundColor: colors.accent,
         borderRadius: 12,
+        padding: 12,
     },
     primaryButtonText: {
         color: '#fff',
@@ -202,12 +208,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.cardMuted,
         borderRadius: 12,
         padding: 12,
     },
     secondaryButtonText: {
-        color: '#666',
+        color: colors.mutedText,
         fontSize: 16,
         fontWeight: '600',
     },
@@ -218,5 +224,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         marginBottom: 16,
+        color: colors.text,
     }
 });

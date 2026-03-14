@@ -7,10 +7,13 @@ import { restaurantAPI } from '@/services/api';
 import { locationService } from '@/services/location';
 import { Restaurant } from '@/types';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function HomeScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -56,7 +59,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.locationContainer}>
-          <MapPin size={20} color="#fff" />
+          <MapPin size={20} color={colors.card} />
           <View style= {{ flex: 1}}>
             <Text style={styles.locationLabel}>Livraison à </Text>
             <Text style={styles.locationText} numberOfLines={1}>{location}</Text>
@@ -64,7 +67,7 @@ export default function HomeScreen() {
         </View>
 
         <TouchableOpacity style={styles.searchBar} onPress={() => router.push('/(tabs)/search')}>
-        <Search size={20} color="#666" />
+        <Search size={20} color={colors.mutedText} />
         <Text style={styles.searchPlaceholder}>Rechercher un restaurant...</Text>
         </TouchableOpacity>
       </View>
@@ -95,13 +98,13 @@ export default function HomeScreen() {
 
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof import('@/constants/theme').Colors.light) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: colors.accent,
     padding: 16,
     paddingBottom: 20,
   },
@@ -113,18 +116,18 @@ const styles = StyleSheet.create({
   },
   locationLabel: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: colors.card,
   },
   locationText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.card,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -132,7 +135,7 @@ const styles = StyleSheet.create({
   searchPlaceholder: {
     flex: 1,
     fontSize: 14,
-    color: 'rgba(0, 0, 0, 0.5)',
+    color: colors.mutedText,
   },
   content : {
     flex: 1,
@@ -140,13 +143,13 @@ const styles = StyleSheet.create({
   promoBanner: {
     margin: 16,
     padding: 16,
-    backgroundColor: '#8B5CF6',
+    backgroundColor: colors.tint,
     borderRadius: 16,
   },
   promoLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#fff',
+    color: colors.card,
     letterSpacing: 1,
     marginBottom: 4,
     textTransform: 'uppercase',
@@ -155,12 +158,12 @@ const styles = StyleSheet.create({
   promoTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.card,
     marginBottom: 4,
   },
   promoCode: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: colors.card,
   },
   section: {
     padding: 16,
@@ -169,9 +172,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 16,
+    color: colors.text,
   },
   emptyText: {
-    color: '#666',
+    color: colors.mutedText,
     textAlign: 'center',
   }
 

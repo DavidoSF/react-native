@@ -1,6 +1,9 @@
 import { Order } from "@/types";
 import { Check, CheckCircle, ChefHat, Clock, Navigation, X } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { Colors } from "@/constants/theme";
+import React, { useMemo } from "react";
 
 interface Props {
     order: Order;
@@ -26,6 +29,8 @@ const statusIcon: Record<Order['status'], React.ReactNode> = {
 
 
 export const OrderCard: React.FC<Props> = ({ order, onPress }) => {
+    const { colors } = useAppTheme();
+    const styles = useMemo(() => createStyles(colors), [colors]);
     return (
         <TouchableOpacity style={styles.card} onPress={onPress} disabled={!onPress}>
                 <View style={styles.header}>
@@ -46,9 +51,9 @@ export const OrderCard: React.FC<Props> = ({ order, onPress }) => {
 }
 
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof Colors.light) => StyleSheet.create({
     card: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
         marginBottom: 12,
@@ -68,6 +73,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700', 
         flex : 1,
+        color: colors.text,
     },
     status: {
         flexDirection: 'row',
@@ -83,7 +89,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     items: {
-        color: '#666',
+        color: colors.mutedText,
         marginBottom: 10,
     },
     footer: {
@@ -94,10 +100,10 @@ const styles = StyleSheet.create({
     total: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#FF6B35',
+        color: colors.accent,
     },
     date: {
         fontSize: 12,
-        color: '#999',
+        color: colors.placeholder,
     }
 });

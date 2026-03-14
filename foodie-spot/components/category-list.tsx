@@ -1,15 +1,21 @@
 import { Coffee, IceCream2, Pizza, Sandwich, UtensilsCrossed } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-const categories = [
-    { label: 'Burger', icon: <Sandwich size={18} color="#FF6B35" /> },
-    { label: 'Pizza', icon: <Pizza size={18} color="#FF6B35" /> },
-    { label: 'Sushi', icon: <UtensilsCrossed size={18} color="#FF6B35" /> },
-    { label: 'Healthy', icon: <Coffee size={18} color="#FF6B35" /> },
-    { label: 'Desserts', icon: <IceCream2 size={18} color="#FF6B35" /> },
-];
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { Colors } from '@/constants/theme';
+import React, { useMemo } from 'react';
 
 export const CategoryList: React.FC = () => {
+    const { colors } = useAppTheme();
+    const styles = useMemo(() => createStyles(colors), [colors]);
+
+    const categories = [
+        { label: 'Burger', icon: <Sandwich size={18} color={colors.accent} /> },
+        { label: 'Pizza', icon: <Pizza size={18} color={colors.accent} /> },
+        { label: 'Sushi', icon: <UtensilsCrossed size={18} color={colors.accent} /> },
+        { label: 'Healthy', icon: <Coffee size={18} color={colors.accent} /> },
+        { label: 'Desserts', icon: <IceCream2 size={18} color={colors.accent} /> },
+    ];
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Catégories</Text>
@@ -25,7 +31,7 @@ export const CategoryList: React.FC = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof Colors.light) => StyleSheet.create({
     container: {
         paddingHorizontal: 16,
         paddingVertical: 12,
@@ -34,19 +40,20 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         marginBottom: 12,
+        color: colors.text,
     },
     chip: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: '#FFF4EF',
+        backgroundColor: colors.cardMuted,
         paddingHorizontal: 14,
         paddingVertical: 10,
         borderRadius: 18,
         marginRight: 12,
     },
     chipText: {
-        color: '#FF6B35',
+        color: colors.accent,
         fontWeight: '600',
     }
 });

@@ -1,8 +1,10 @@
 import { Restaurant } from '@/types';
 import { Image } from 'expo-image';
 import { Clock, MapPin, Star } from 'lucide-react-native';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { Colors } from '@/constants/theme';
 
 
 interface Props {
@@ -12,6 +14,8 @@ interface Props {
 }
 
 export const RestaurantCard: React.FC<Props> = ({ restaurant, onPress, compact }) => {
+    const { colors } = useAppTheme();
+    const styles = useMemo(() => createStyles(colors), [colors]);
     return (
         <TouchableOpacity style={[styles.card, compact && styles.compact]} onPress={onPress}>
             <Image source={{ uri: restaurant.image }} style={[styles.image, compact && styles.compactImage]} />
@@ -27,11 +31,11 @@ export const RestaurantCard: React.FC<Props> = ({ restaurant, onPress, compact }
                 <Text style={styles.cuisine}>{restaurant.cuisine}</Text>
                 <View style={styles.meta}>
                     <View style={styles.metaItem}>
-                        <Star size={16} color="#FF6B35" />
+                        <Star size={16} color={colors.accent} />
                         <Text style={styles.metaText}>{restaurant.rating} {restaurant.reviewCount} avis</Text>
                     </View>
                     <View style={styles.metaItem}>
-                        <Clock size={16} color="#FF6B35" />
+                        <Clock size={16} color={colors.accent} />
                         <Text style={styles.metaText}>
                             {typeof restaurant.deliveryTime === 'object' 
                                 ? `${restaurant.deliveryTime.min}-${restaurant.deliveryTime.max}` 
@@ -40,7 +44,7 @@ export const RestaurantCard: React.FC<Props> = ({ restaurant, onPress, compact }
                     </View>
 
                     <View style={styles.metaItem}>
-                        <MapPin size={16} color="#FF6B35" />
+                        <MapPin size={16} color={colors.accent} />
                         <Text style={styles.metaText}>{restaurant.distance ?? 15} km</Text>
                     </View>
                     {!compact && <Text style={styles.description} numberOfLines={2}>{restaurant.description}</Text>}
@@ -55,11 +59,11 @@ export const RestaurantCard: React.FC<Props> = ({ restaurant, onPress, compact }
 }
 
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof Colors.light) => StyleSheet.create({
     card: {
         flexDirection: 'row',
         marginBottom: 16,
-        backgroundColor: '#FFF',
+        backgroundColor: colors.card,
         borderRadius: 16,
         overflow: 'hidden',
         shadowColor: '#000',
@@ -94,20 +98,21 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 16,
         fontWeight: '700',
+        color: colors.text,
     },
     badge: {
-        backgroundColor: '#FFE5DB',
+        backgroundColor: colors.accent,
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
     },
     badgeText: {
-        color: '#FF6B35',
+        color: colors.card,
         fontSize: 12,
         fontWeight: '600',
     },
     cuisine: {
-        color: '#666',
+        color: colors.mutedText,
         fontSize: 13
     },
     meta: {
@@ -122,11 +127,11 @@ const styles = StyleSheet.create({
     },
     metaText: {
         fontSize: 12,
-        color: '#666',
+        color: colors.mutedText,
     },
 
     description: {
         fontSize: 12,
-        color: '#666',
+        color: colors.mutedText,
     }
 });

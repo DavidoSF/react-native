@@ -1,13 +1,17 @@
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {useRouter} from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import * as Device from 'expo-device';
 import { useNotifications } from '@/hooks/use-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { Colors } from '@/constants/theme';
 export default function NotificationScreen() {
 
+     const { colors } = useAppTheme();
+     const styles = useMemo(() => createStyles(colors), [colors]);
      const router = useRouter();
     const [testResults, setTestResults] = useState<string[]>([]);
     const isSimulator = !Device.isDevice;
@@ -275,10 +279,10 @@ export default function NotificationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: typeof Colors.light) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f9fafb',
+        backgroundColor: colors.background,
     },
     header: {
         paddingHorizontal: 24,
@@ -313,7 +317,7 @@ const styles = StyleSheet.create({
         padding: 24,
     },
     statusCard: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 20,
         marginBottom: 24,
@@ -331,7 +335,7 @@ const styles = StyleSheet.create({
     },
     statusText: {
         fontSize: 14,
-        color: '#111827',
+        color: colors.text,
         fontWeight: '500',
     },
     tokenContainer: {
@@ -342,12 +346,12 @@ const styles = StyleSheet.create({
     },
     tokenLabel: {
         fontSize: 12,
-        color: '#6b7280',
+        color: colors.mutedText,
         marginBottom: 4,
     },
     tokenText: {
         fontSize: 11,
-        color: '#111827',
+        color: colors.text,
         fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     },
     badgeContainer: {
@@ -358,7 +362,7 @@ const styles = StyleSheet.create({
     },
     badgeLabel: {
         fontSize: 14,
-        color: '#111827',
+        color: colors.text,
         fontWeight: '500',
     },
     scheduledContainer: {
@@ -366,7 +370,7 @@ const styles = StyleSheet.create({
     },
     scheduledLabel: {
         fontSize: 14,
-        color: '#6b7280',
+        color: colors.mutedText,
     },
     section: {
         marginBottom: 24,
@@ -380,7 +384,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#111827',
+        color: colors.text,
         marginBottom: 16,
     },
     button: {
@@ -428,7 +432,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     resultsContainer: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 16,
         maxHeight: 300,
@@ -436,39 +440,39 @@ const styles = StyleSheet.create({
     resultItem: {
         paddingVertical: 8,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: colors.border,
     },
     resultText: {
         fontSize: 12,
-        color: '#111827',
+        color: colors.text,
         fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     },
     emptyResults: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 32,
         alignItems: 'center',
     },
     emptyText: {
         fontSize: 16,
-        color: '#6b7280',
+        color: colors.mutedText,
         marginTop: 12,
         fontWeight: '500',
     },
     emptySubtext: {
         fontSize: 14,
-        color: '#9ca3af',
+        color: colors.placeholder,
         marginTop: 4,
         textAlign: 'center',
     },
     clearButton: {
-        color: '#a855f7',
+        color: colors.tint,
         fontSize: 14,
         fontWeight: '600',
     },
     infoBox: {
         flexDirection: 'row',
-        backgroundColor: '#dbeafe',
+        backgroundColor: colors.cardMuted,
         borderRadius: 12,
         padding: 16,
         gap: 12,
@@ -477,7 +481,7 @@ const styles = StyleSheet.create({
     infoText: {
         flex: 1,
         fontSize: 14,
-        color: '#1e40af',
+        color: colors.text,
         lineHeight: 20,
     },
 });
