@@ -1192,6 +1192,7 @@ app.post("/orders", authenticateToken, (req, res) => {
   if (promoCode) {
     const promoCodes = {
       "BIENVENUE30": { discount: 30, type: "percent", minOrder: 20, maxDiscount: 15 },
+      "FOODIE30": { discount: 30, type: "percent", minOrder: 10, maxDiscount: 15 },
       "FOODIE10": { discount: 10, type: "percent", minOrder: 15, maxDiscount: 10 },
       "LIVRAISON": { discount: 100, type: "delivery", minOrder: 25 }
     };
@@ -1653,6 +1654,14 @@ app.post("/promos/validate", authenticateToken, (req, res) => {
       description: "30% de réduction (max 15€)",
       validUntil: "2026-12-31"
     },
+    "FOODIE30": { 
+      discount: 30, 
+      type: "percent", 
+      minOrder: 10, 
+      maxDiscount: 15,
+      description: "30% sur votre première commande (max 15€)",
+      validUntil: "2026-12-31"
+    },
     "FOODIE10": { 
       discount: 10, 
       type: "percent", 
@@ -1757,6 +1766,23 @@ app.post("/promos/validate", authenticateToken, (req, res) => {
       maxDiscount: promo.maxDiscount,
       message: discountDisplay,
       validUntil: promo.validUntil
+    }
+  });
+});
+
+// GET /promos/banner – active promotional banner shown on the home screen
+app.get("/promos/banner", (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      id: "banner-foodie30",
+      label_fr: "Offre spéciale",
+      label_en: "Special offer",
+      title_fr: "-30% sur votre première commande",
+      title_en: "-30% on your first order",
+      code: "FOODIE30",
+      backgroundColor: "#8B5CF6",
+      validUntil: "2026-12-31"
     }
   });
 });

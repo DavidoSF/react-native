@@ -28,7 +28,7 @@ export interface SearchFilters {
 }
 export interface Dish {
     id: string;
-    resurantId: string;
+    restaurantId: string;
     name: string;
     description: string;
     price: number;
@@ -100,6 +100,15 @@ export interface ToastMessage {
 export interface ToastOptions {
     type?: ToastType;
     duration?: number;
+}
+
+export interface PromoBanner {
+    id: string;
+    label: string;
+    title: string;
+    code: string;
+    backgroundColor: string;
+    validUntil?: string;
 }
 
 export type ToastType = 'success' | 'error' | 'info';

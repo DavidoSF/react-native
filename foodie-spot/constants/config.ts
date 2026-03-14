@@ -1,9 +1,20 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 const ENV = {
     development: {
-        // API_URL: 'http://localhost:4000/',
-        API_URL: 'http://192.168.1.91:4000/',
+        get API_URL() {
+            // On web the browser and server share the same machine → localhost always works.
+            if (Platform.OS === 'web') return 'http://localhost:4000/';
+
+            // On a physical device/emulator, derive the host from the Expo dev-server URI.
+            const hostUri =
+                Constants.expoConfig?.hostUri ??
+                (Constants as any).manifest?.debuggerHost ??
+                (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
+            const host = hostUri ? hostUri.split(':')[0] : '10.116.1.229';
+            return `http://${host}:4000/`;
+        },
     },
     staging: {
         API_URL: 'https://staging-api.foodie-spot.com/api',

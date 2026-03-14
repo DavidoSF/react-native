@@ -4,7 +4,7 @@ import axios from 'axios';
 
 import { storage, STORAGE_KEYS } from '@/services/storage';
 import { auth } from './auth'; // used to fetch token from SecureStore
-import { Dish, Order, Restaurant, SearchFilters, User } from '@/types';
+import { Dish, Order, PromoBanner, Restaurant, SearchFilters, User } from '@/types';
 import log from './logger';
 import config from '@/constants/config';
 
@@ -293,5 +293,17 @@ export const uploadAPI = {
         }
     }
 }
+
+export const promoBannerAPI = {
+    async getBanner(): Promise<PromoBanner | null> {
+        try {
+            const response = await api.get('/promos/banner');
+            return response.data?.data || null;
+        } catch (error) {
+            log.warn('Failed to fetch promo banner, using fallback', error);
+            return null;
+        }
+    },
+};
 
 export default api ;
