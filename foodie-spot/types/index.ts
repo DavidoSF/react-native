@@ -6,7 +6,7 @@ export interface Restaurant {
     image: string;
     rating: number;
     reviewsCount: number;
-    deliveryTime: number;
+    deliveryTime: number | { min: number; max: number };
     distance: number;
     priceRange: string;
     address: string;
