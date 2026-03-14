@@ -4,7 +4,7 @@ import axios from 'axios';
 
 import { storage, STORAGE_KEYS } from '@/services/storage';
 import { auth } from './auth'; // used to fetch token from SecureStore
-import { Dish, Order, PromoBanner, Restaurant, SearchFilters, User } from '@/types';
+import { Category, Dish, Order, PromoBanner, Restaurant, SearchFilters, User } from '@/types';
 import log from './logger';
 import config from '@/constants/config';
 
@@ -293,6 +293,18 @@ export const uploadAPI = {
         }
     }
 }
+
+export const categoryAPI = {
+    async getCategories(): Promise<Category[]> {
+        try {
+            const response = await api.get('/categories');
+            return response.data?.data || [];
+        } catch (error) {
+            log.error('Failed to fetch categories', error);
+            return [];
+        }
+    },
+};
 
 export const promoBannerAPI = {
     async getBanner(): Promise<PromoBanner | null> {
