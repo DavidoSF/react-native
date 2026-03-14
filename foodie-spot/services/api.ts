@@ -204,6 +204,26 @@ export const userAPI = {
     async getCurrentUser(): Promise<User | null> {
         return await storage.getItem(STORAGE_KEYS.USER);
     },
+    async getProfile(): Promise<Record<string, any> | null> {
+        try {
+            const response = await api.get('/users/profile');
+            const data = response.data?.data || null;
+            if (data) await storage.setItem(STORAGE_KEYS.USER, data);
+            return data;
+        } catch (error) {
+            log.warn('Failed to fetch profile from API, falling back to cache', error);
+            return storage.getItem(STORAGE_KEYS.USER);
+        }
+    },
+    async getFavorites(): Promise<Restaurant[]> {
+        try {
+            const response = await api.get('/user/favorites');
+            return response.data?.data || [];
+        } catch (error) {
+            log.error('Failed to fetch favorites', error);
+            return [];
+        }
+    },
     async toggleFavorite(restaurantId: string) {
     },
     async updateProfile(updates: Partial<User>): Promise<User> {
