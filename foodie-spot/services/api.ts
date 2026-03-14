@@ -4,7 +4,7 @@ import axios from 'axios';
 
 import { storage, STORAGE_KEYS } from '@/services/storage';
 import { auth } from './auth'; // used to fetch token from SecureStore
-import { Dish, Order, Restaurant, SearchFilters, User } from '@/types';
+import { Dish, Order, OrderTracking, Restaurant, SearchFilters, User } from '@/types';
 import log from './logger';
 import config from '@/constants/config';
 
@@ -265,6 +265,25 @@ export const orderAPI = {
         } catch (error) {
             // log.error(`Failed to fetch order ${id}`, error);
             return (await cache.get<Order>(`order_${id}`)) || null;
+        }
+    },
+    async getOrderTracking(id: string): Promise<OrderTracking | null> {
+        const isConnected = await checkConnection();
+
+        if (!isConnected) {
+            const cached = await cache.get<OrderTracking>(`order_track_${id}`);
+            return cached || null;
+        }
+
+        try {
+            const response = await api.get(`/orders/${id}/track`);
+            const tracking = response.data?.data || response.data || null;
+            if (tracking) {
+                await cache.set(`order_track_${id}`, tracking);
+            }
+            return tracking;
+        } catch (error) {
+            return (await cache.get<OrderTracking>(`order_track_${id}`)) || null;
         }
     },
 }

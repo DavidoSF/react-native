@@ -1,5 +1,5 @@
 import { Order } from "@/types";
-import { Check, CheckCircle, ChefHat, Clock, Navigation, X } from "lucide-react-native";
+import { Bike, Check, CheckCircle, ChefHat, Clock, Navigation, Package, X } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface Props {
@@ -14,6 +14,9 @@ const statusColor: Record<Order['status'],string> = {
     'cancelled': '#F44336', 
     'confirmed': '#2196F3',
     'on-the-way': '#8B5CF6',
+    'ready': '#10B981',
+    'picked_up': '#6366F1',
+    'delivering': '#8B5CF6',
 };
 const statusIcon: Record<Order['status'], React.ReactNode> = {
     'pending': <Clock size={16} color="#9CA3AF" />,
@@ -22,6 +25,9 @@ const statusIcon: Record<Order['status'], React.ReactNode> = {
     'cancelled': <X size={16} color="#F44336" />, 
     'confirmed': <CheckCircle size={16} color="#2196F3" />,
     'on-the-way': <Navigation size={16} color="#8B5CF6" />,
+    'ready': <Package size={16} color="#10B981" />,
+    'picked_up': <Bike size={16} color="#6366F1" />,
+    'delivering': <Navigation size={16} color="#8B5CF6" />,
 };
 
 

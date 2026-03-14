@@ -68,6 +68,69 @@ export interface Address {
         longitude: number;
     };
 }
+export type OrderStatus =
+    | 'pending'
+    | 'confirmed'
+    | 'preparing'
+    | 'ready'
+    | 'picked_up'
+    | 'delivering'
+    | 'on-the-way'
+    | 'delivered'
+    | 'cancelled';
+
+export interface OrderTimelineItem {
+    status: OrderStatus;
+    timestamp: string;
+    message?: string;
+}
+
+export interface OrderTrackingStep {
+    key: OrderStatus;
+    label: string;
+    completed: boolean;
+    time?: string;
+}
+
+export interface OrderTracking {
+    orderId: string;
+    orderNumber?: string;
+    status: OrderStatus;
+    timeline?: OrderTimelineItem[];
+    steps?: OrderTrackingStep[];
+    estimatedDelivery?: string;
+    estimatedArrival?: string;
+    estimatedMinutes?: number;
+    restaurant?: {
+        id: string;
+        name: string;
+        image?: string;
+        phone?: string;
+        location?: {
+            latitude: number;
+            longitude: number;
+            address?: string;
+        };
+    } | null;
+    deliveryAddress?: Address | string;
+    driver?: {
+        id: string;
+        name: string;
+        phone?: string;
+        photo?: string;
+        vehicle?: string;
+        rating?: number;
+        totalDeliveries?: number;
+    };
+    driverLocation?: {
+        latitude: number;
+        longitude: number;
+        heading?: number;
+        speed?: number;
+        updatedAt?: string;
+    };
+}
+
 export interface Order {
     id: string;
     restaurantId: string;
@@ -75,14 +138,22 @@ export interface Order {
     items: CartItem[];
     total: number;
     deliveryFee: number;
-    status: 'pending' | 'confirmed' | 'preparing' | 'on-the-way' | 'delivered' | 'cancelled';
-    createdAt: Date;
-    estimatedDeliveryTime?: Date;
-    deliveryAddress: string;
-    driverInfo?:{
+    status: OrderStatus;
+    createdAt: Date | string;
+    estimatedDeliveryTime?: Date | string;
+    deliveryAddress: Address | string;
+    orderNumber?: string;
+    timeline?: OrderTimelineItem[];
+    driverInfo?: {
+        id?: string;
         name: string;
         phone: string;
         photo?: string;
+        avatar?: string;
+        vehicle?: string;
+        licensePlate?: string | null;
+        rating?: number;
+        totalDeliveries?: number;
         location?: {
             latitude: number;
             longitude: number;
