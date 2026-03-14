@@ -102,6 +102,15 @@ export interface ToastOptions {
     duration?: number;
 }
 
+export interface PromoBanner {
+    id: string;
+    label: string;
+    title: string;
+    code: string;
+    backgroundColor: string;
+    validUntil?: string;
+}
+
 export type ToastType = 'success' | 'error' | 'info';
 
 export interface ToastContextType { 

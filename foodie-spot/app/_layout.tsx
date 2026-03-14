@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
+import { I18nProvider } from '@/contexts/i18n-context';
 import { ToastProvider } from '@/components/toast-provider';
 import { useOffline } from '@/hooks/use-offline';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -112,11 +113,13 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
+        <I18nProvider>
         <ToastProvider>
         <AuthProvider>
           <RootLayoutContent />
         </AuthProvider>
         </ToastProvider>
+        </I18nProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

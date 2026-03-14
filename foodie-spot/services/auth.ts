@@ -1,10 +1,34 @@
 // services/auth.ts
 
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import api from './api';
 import log from './logger';
 import { STORAGE_KEYS } from './storage';
 import { cache } from './cache';
+
+const secureStorage = {
+  async getItem(key: string): Promise<string | null> {
+    if (Platform.OS === 'web') {
+      return localStorage.getItem(key);
+    }
+    return SecureStore.getItemAsync(key);
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      localStorage.setItem(key, value);
+      return;
+    }
+    return SecureStore.setItemAsync(key, value);
+  },
+  async deleteItem(key: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      localStorage.removeItem(key);
+      return;
+    }
+    return SecureStore.deleteItemAsync(key);
+  },
+};
 
 // ============================================
 // Types
@@ -69,7 +93,7 @@ export interface AuthState {
 class AuthService {
   async getAccessToken(): Promise<string | null> {
     try {
-      return await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+      return await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     } catch (error) {
       log.error('Failed to get access token:', error);
       return null;
@@ -78,7 +102,7 @@ class AuthService {
 
   async setAccessToken(token: string): Promise<void> {
     try {
-      await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, token);
+      await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
     } catch (error) {
       log.error('Failed to set access token:', error);
       throw error;
@@ -87,7 +111,7 @@ class AuthService {
 
   async getRefreshToken(): Promise<string | null> {
     try {
-      return await SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+      return await secureStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
     } catch (error) {
       log.error('Failed to get refresh token:', error);
       return null;
@@ -96,7 +120,7 @@ class AuthService {
 
   async setRefreshToken(token: string): Promise<void> {
     try {
-      await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, token);
+      await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, token);
     } catch (error) {
       log.error('Failed to set refresh token:', error);
       throw error;
@@ -105,9 +129,9 @@ class AuthService {
 
   async clearTokens(): Promise<void> {
     try {
-      await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
-      await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
-      await SecureStore.deleteItemAsync(STORAGE_KEYS.USER);
+      await secureStorage.deleteItem(STORAGE_KEYS.ACCESS_TOKEN);
+      await secureStorage.deleteItem(STORAGE_KEYS.REFRESH_TOKEN);
+      await secureStorage.deleteItem(STORAGE_KEYS.USER);
     } catch (error) {
       log.error('Failed to clear tokens:', error);
     }
@@ -115,7 +139,7 @@ class AuthService {
 
   async getStoredUser(): Promise<User | null> {
     try {
-      const userJson = await SecureStore.getItemAsync(STORAGE_KEYS.USER);
+      const userJson = await secureStorage.getItem(STORAGE_KEYS.USER);
       if (userJson) {
         return JSON.parse(userJson);
       }
@@ -128,7 +152,7 @@ class AuthService {
 
   async setStoredUser(user: User): Promise<void> {
     try {
-      await SecureStore.setItemAsync(STORAGE_KEYS.USER, JSON.stringify(user));
+      await secureStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
     } catch (error) {
       log.error('Failed to set stored user:', error);
       throw error;
@@ -183,7 +207,10 @@ class AuthService {
       if (error.response?.status === 401) {
         throw new Error('Email ou mot de passe incorrect');
       }
-      throw new Error('Erreur de connexion. Veuillez réessayer.');
+      if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED' || !error.response) {
+        throw new Error('Impossible de joindre le serveur. Vérifiez que le backend est démarré et que vous êtes sur le même réseau.');
+      }
+      throw new Error(error.response?.data?.message || 'Erreur de connexion. Veuillez réessayer.');
     }
   }
 
@@ -227,7 +254,10 @@ class AuthService {
       if (error.response?.status === 409) {
         throw new Error('Cet email est déjà utilisé');
       }
-      throw new Error('Erreur lors de l\'inscription. Veuillez réessayer.');
+      if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED' || !error.response) {
+        throw new Error('Impossible de joindre le serveur. Vérifiez que le backend est démarré.');
+      }
+      throw new Error(error.response?.data?.message || 'Erreur lors de l\'inscription. Veuillez réessayer.');
     }
   }
 

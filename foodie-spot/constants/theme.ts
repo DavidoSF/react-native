@@ -8,6 +8,17 @@ import { Platform } from 'react-native';
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
+/** Brand palette – use these tokens instead of raw hex values across the app */
+export const Brand = {
+  primary: '#FF6B35',       // Main orange – header, CTAs, icons
+  secondary: '#8B5CF6',     // Accent violet – promo banners, badges
+  primaryLight: '#FFF4EF',  // Light orange tint – chip backgrounds
+  primaryDark: '#E85A24',   // Darker orange – pressed states
+  danger: '#EF4444',
+  warning: '#F59E0B',
+  success: '#10B981',
+};
+
 export const Colors = {
   light: {
     text: '#11181C',
