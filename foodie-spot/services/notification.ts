@@ -54,9 +54,6 @@ export const notifications = {
     async initialize(): Promise<PushToken | null> {
         const isSimulator = !Device.isDevice;
 
-        if (isSimulator) {
-            console.log('Running on simulator - local notifications will work, but push tokens require a physical device');
-        }
         const {status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
 
@@ -83,7 +80,6 @@ export const notifications = {
             };
             
             await AsyncStorage.setItem(KEYS.PUSH_TOKEN, JSON.stringify(mockToken));
-            console.log('Simulator mode: Using mock token.');
             return mockToken;
         }
 
@@ -122,6 +118,9 @@ export const notifications = {
     async getToken(): Promise<PushToken | null> {
         const stored = await AsyncStorage.getItem(KEYS.PUSH_TOKEN);
         return stored ? JSON.parse(stored) : null;
+    },
+    async clearToken(): Promise<void> {
+        await AsyncStorage.removeItem(KEYS.PUSH_TOKEN);
     },
     async send(title: string, body: string, data?: Record<string, any>): Promise<string>{
         return Notifications.scheduleNotificationAsync({
@@ -187,12 +186,10 @@ export const notifications = {
         onTapped?: (response: Notifications.NotificationResponse) => void
     ): () => void {
         const receivedSub = Notifications.addNotificationReceivedListener((n) => {
-            console.log('Notification received:', n);
             onReceived?.(n);
         });
 
         const responseSub = Notifications.addNotificationResponseReceivedListener((r) => {
-            console.log('Notification tapped:', r);
             onTapped?.(r);
         });
 

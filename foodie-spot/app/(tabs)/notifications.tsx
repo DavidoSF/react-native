@@ -1,15 +1,26 @@
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import {useRouter} from 'expo-router';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import * as Device from 'expo-device';
 import { useNotifications } from '@/hooks/use-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+type PendingAction =
+  | 'init'
+  | 'send'
+  | 'schedule5'
+  | 'schedule30'
+  | 'setBadge'
+  | 'clearBadge'
+  | 'resetInit';
+
 export default function NotificationScreen() {
 
      const router = useRouter();
     const [testResults, setTestResults] = useState<string[]>([]);
+    const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
     const isSimulator = !Device.isDevice;
 
     const {
@@ -24,6 +35,10 @@ export default function NotificationScreen() {
         setBadgeCount,
         clearBadge,
         refreshScheduled,
+        resetInitialization,
+        error,
+        clearError,
+        reportError,
     } = useNotifications(
         (notification) => {
             addTestResult(`✅ Notification reçue: ${ notification.request.content.title }`);
@@ -33,89 +48,105 @@ export default function NotificationScreen() {
         }
     );
 
+    const isBusy = isLoading || pendingAction !== null;
+
+    const formatError = (err: unknown) => {
+        if (err instanceof Error && err.message) return err.message;
+        if (typeof err === 'string') return err;
+        try {
+            return JSON.stringify(err);
+        } catch {
+            return 'Erreur inconnue';
+        }
+    };
+
     const addTestResult = (message : string) => {
         setTestResults((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
     }
 
     useEffect(() => {
         refreshScheduled();
-    });
+    }, [refreshScheduled]);
 
-    const handleInitialize = async () => {
+    const runAction = async (action: PendingAction, fn: () => Promise<void>) => {
+        setPendingAction(action);
+        clearError();
+        try {
+            await fn();
+        } catch (err) {
+            reportError(err);
+            addTestResult(`❌ Erreur: ${formatError(err)}`);
+        } finally {
+            setPendingAction(null);
+        }
+    };
+
+    const handleInitialize = () => runAction('init', async () => {
         addTestResult('🔄 Initialisation des notifications ...');
         const token = await initialize();
 
-         if (token) {
+        if (token) {
             addTestResult(`✅ Token obtenu: ${token.token.substring(0, 20)}...`);
             addTestResult(`📱 Plateforme: ${token.platform}`);
             addTestResult(`🆔 Device: ${token.deviceId || 'N/A'}`);
-         } else {
-            addTestResult(`❌ Echec de l\'intialisation`);
-         }
-    };
-
-    const handleSendImmediate = async () => {
-        try {
-            const id = await send(
-                'Test Notification',
-                'Ceci est une notification de test immediate !',
-            );
-            addTestResult(`✅ Notification envoyée (ID: ${id.substring(0, 8)}...`);
-        } catch (error) {
-            addTestResult(`❌ Erreur: ${error}`);
+        } else {
+            addTestResult(`❌ Échec de l'initialisation`);
         }
-    };
+    });
+
+    const handleSendImmediate = () => runAction('send', async () => {
+        const id = await send(
+            'Test Notification',
+            'Ceci est une notification de test immediate !',
+        );
+        addTestResult(`✅ Notification envoyée (ID: ${id.substring(0, 8)}...)`);
+    });
 
 
-     const handleSchedule5Seconds = async () => {
+     const handleSchedule5Seconds = () => runAction('schedule5', async () => {
         const date = new Date();
         date.setSeconds(date.getSeconds() + 5);
 
-        try {
+        const id = await schedule(
+            'Notification Programmée',
+            'Cette notification apparaîtra dans 5 secondes',
+            date,
+            {testType: 'scheduled_5s'}
+        );
+        addTestResult(`✅ Notification programmée (${id.substring(0, 8)}...) pour ${date.toLocaleTimeString()}`);
+    });
 
-            const id = await schedule(
-                'Notification Programmée',
-                'Cette notification apparaîtra dans 5 secondes',
-                date,
-                {testType: 'scheduled_5s'}
-            );
-            addTestResult(`✅ Notification Programmée pour ${date.toLocaleTimeString()}`);
-            await refreshScheduled();
-        } catch (error) {
-            addTestResult(`❌ Erreur: ${error}`);
-        }
-    };
-
-       const handleSchedule30Seconds = async () => {
+       const handleSchedule30Seconds = () => runAction('schedule30', async () => {
         const date = new Date();
         date.setSeconds(date.getSeconds() + 30);
 
-        try {
+        const id = await schedule(
+            'Rappel de voyage',
+            'Cette notification apparaîtra dans 30 secondes',
+            date,
+            {testType: 'trip_reminder'}
+        );
+        addTestResult(`✅ Notification programmée (${id.substring(0, 8)}...) pour ${date.toLocaleTimeString()}`);
+    });
 
-            const id = await schedule(
-                'Rappel de voyage',
-                'Cette notification apparaîtra dans 30 secondes',
-                date,
-                {testType: 'trip_reminder'}
-            );
-            addTestResult(`✅ Notification Programmée pour ${date.toLocaleTimeString()}`);
-            await refreshScheduled();
-        } catch (error) {
-            addTestResult(`❌ Erreur: ${error}`);
-        }
-    };
+     const handleSetBadge = () => runAction('setBadge', async () => {
+        await setBadgeCount(5);
+        addTestResult('✅ Badge défini à 5');
+    });
 
-     const handleSetBadge = async () => {
-       await setBadgeCount(5);
-        addTestResult('✅ Badge défini 5');
-    };
-
-      const handleClearBadge = async () => {
-       await clearBadge();
+      const handleClearBadge = () => runAction('clearBadge', async () => {
+        await clearBadge();
         addTestResult('✅ Badge effacé');
-    };
-      const handleClearResults = async () => {
-       await setTestResults([]);
+    });
+
+      const handleResetInitialization = () => runAction('resetInit', async () => {
+        await resetInitialization();
+        addTestResult('♻️ Initialisation réinitialisée');
+    });
+
+      const handleClearResults = () => {
+       setTestResults([]);
+       clearError();
     };
 
 
@@ -133,8 +164,27 @@ export default function NotificationScreen() {
       </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {error && (
+          <View style={styles.errorBox}>
+            <Ionicons name="alert-circle" size={20} color="#b91c1c" />
+            <View style={styles.errorContent}>
+              <Text style={styles.errorTitle}>Une erreur est survenue</Text>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+            <TouchableOpacity onPress={clearError} style={styles.errorDismiss}>
+              <Ionicons name="close" size={18} color="#b91c1c" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Status Card */}
         <View style={styles.statusCard}>
+          {isLoading && (
+            <View style={styles.statusRow}>
+              <ActivityIndicator size="small" color="#3b82f6" />
+              <Text style={styles.statusText}>Chargement des données...</Text>
+            </View>
+          )}
           <View style={styles.statusRow}>
             <Ionicons 
               name={isSimulator ? "phone-portrait-outline" : "phone-portrait"} 
@@ -155,6 +205,12 @@ export default function NotificationScreen() {
               Permissions: {hasPermission ? 'Accordées' : 'Non accordées'}
             </Text>
           </View>
+          <View style={styles.statusRow}>
+            <Ionicons name="calendar-outline" size={20} color="#6b7280" />
+            <Text style={styles.statusText}>
+              Notifications programmées: {scheduled.length}
+            </Text>
+          </View>
           {pushToken && (
             <View style={styles.tokenContainer}>
               <Text style={styles.tokenLabel}>Token:</Text>
@@ -166,13 +222,6 @@ export default function NotificationScreen() {
           <View style={styles.badgeContainer}>
             <Text style={styles.badgeLabel}>Badge count: {badgeCount}</Text>
           </View>
-          {/* {scheduled.length > 0 && (
-            <View style={styles.scheduledContainer}>
-              <Text style={styles.scheduledLabel}>
-                Notifications programmées: {scheduled.length}
-              </Text>
-            </View>
-          )} */}
         </View>
 
         {/* Action Buttons */}
@@ -181,52 +230,108 @@ export default function NotificationScreen() {
           
           <TouchableOpacity 
             onPress={handleInitialize} 
-            disabled={isLoading}
-            style={[styles.button, styles.buttonPrimary]}
+            disabled={isBusy}
+            style={[styles.button, styles.buttonPrimary, isBusy && styles.buttonDisabled]}
           >
-            <Ionicons name="notifications-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>Initialiser les notifications</Text>
+            {pendingAction === 'init' ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Ionicons name="notifications-outline" size={20} color="#fff" />
+            )}
+            <Text style={styles.buttonText}>
+              {pendingAction === 'init' ? 'Initialisation...' : 'Initialiser les notifications'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={handleResetInitialization} 
+            disabled={isBusy}
+            style={[styles.button, styles.buttonSecondary, isBusy && styles.buttonDisabled]}
+          >
+            {pendingAction === 'resetInit' ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Ionicons name="refresh" size={20} color="#fff" />
+            )}
+            <Text style={styles.buttonText}>
+              {pendingAction === 'resetInit' ? 'Réinitialisation...' : "Réinitialiser l'initialisation"}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             onPress={handleSendImmediate}
-            style={[styles.button, styles.buttonSuccess]}
+            disabled={isBusy}
+            style={[styles.button, styles.buttonSuccess, isBusy && styles.buttonDisabled]}
           >
-            <Ionicons name="send-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>Notification immédiate</Text>
+            {pendingAction === 'send' ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Ionicons name="send-outline" size={20} color="#fff" />
+            )}
+            <Text style={styles.buttonText}>
+              {pendingAction === 'send' ? 'Envoi en cours...' : 'Notification immédiate'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             onPress={handleSchedule5Seconds}
-            style={[styles.button, styles.buttonInfo]}
+            disabled={isBusy}
+            style={[styles.button, styles.buttonInfo, isBusy && styles.buttonDisabled]}
           >
-            <Ionicons name="time-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>Programmer (5 secondes)</Text>
+            {pendingAction === 'schedule5' ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Ionicons name="time-outline" size={20} color="#fff" />
+            )}
+            <Text style={styles.buttonText}>
+              {pendingAction === 'schedule5' ? 'Programmation...' : 'Programmer (5 secondes)'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             onPress={handleSchedule30Seconds}
-            style={[styles.button, styles.buttonInfo]}
+            disabled={isBusy}
+            style={[styles.button, styles.buttonInfo, isBusy && styles.buttonDisabled]}
           >
-            <Ionicons name="calendar-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>Programmer (30 secondes)</Text>
+            {pendingAction === 'schedule30' ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Ionicons name="calendar-outline" size={20} color="#fff" />
+            )}
+            <Text style={styles.buttonText}>
+              {pendingAction === 'schedule30' ? 'Programmation...' : 'Programmer (30 secondes)'}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity 
               onPress={handleSetBadge}
-              style={[styles.button, styles.buttonSmall, styles.buttonWarning]}
+              disabled={isBusy}
+              style={[styles.button, styles.buttonSmall, styles.buttonWarning, isBusy && styles.buttonDisabled]}
             >
-              <Ionicons name="ellipse" size={16} color="#fff" />
-              <Text style={styles.buttonTextSmall}>Badge: 5</Text>
+              {pendingAction === 'setBadge' ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Ionicons name="ellipse" size={16} color="#fff" />
+              )}
+              <Text style={styles.buttonTextSmall}>
+                {pendingAction === 'setBadge' ? '...' : 'Badge: 5'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
               onPress={handleClearBadge}
-              style={[styles.button, styles.buttonSmall, styles.buttonDanger]}
+              disabled={isBusy}
+              style={[styles.button, styles.buttonSmall, styles.buttonDanger, isBusy && styles.buttonDisabled]}
             >
-              <Ionicons name="close-circle-outline" size={16} color="#fff" />
-              <Text style={styles.buttonTextSmall}>Effacer badge</Text>
+              {pendingAction === 'clearBadge' ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Ionicons name="close-circle-outline" size={16} color="#fff" />
+              )}
+              <Text style={styles.buttonTextSmall}>
+                {pendingAction === 'clearBadge' ? '...' : 'Effacer badge'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -371,6 +476,34 @@ const styles = StyleSheet.create({
     section: {
         marginBottom: 24,
     },
+    errorBox: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        backgroundColor: '#fee2e2',
+        borderRadius: 12,
+        padding: 16,
+        gap: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#fecaca',
+    },
+    errorContent: {
+        flex: 1,
+    },
+    errorTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#991b1b',
+        marginBottom: 4,
+    },
+    errorText: {
+        fontSize: 13,
+        color: '#7f1d1d',
+        lineHeight: 18,
+    },
+    errorDismiss: {
+        padding: 4,
+    },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -396,6 +529,9 @@ const styles = StyleSheet.create({
     buttonPrimary: {
         backgroundColor: '#a855f7',
     },
+    buttonSecondary: {
+        backgroundColor: '#64748b',
+    },
     buttonSuccess: {
         backgroundColor: '#10b981',
     },
@@ -416,6 +552,9 @@ const styles = StyleSheet.create({
     buttonRow: {
         flexDirection: 'row',
         gap: 12,
+    },
+    buttonDisabled: {
+        opacity: 0.6,
     },
     buttonText: {
         color: '#fff',
