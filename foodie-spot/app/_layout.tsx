@@ -1,9 +1,9 @@
 // app/_layout.tsx
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -25,33 +25,69 @@ function RootLayoutContent() {
   const { isOnline, pendingCount, isSyncing, syncNow } = useOffline();
   const { isAuthenticated, isLoading, refreshAuth } = useAuth();
   const segments = useSegments();
+  const pathname = usePathname();
   const router = useRouter();
+  const lastRedirectRef = useRef<string | null>(null);
+  const refreshAttemptedRef = useRef(false);
+  const refreshInFlightRef = useRef(false);
+
+  const { inTabsGroup, isAuthRoute, isProtectedRoute } = useMemo(() => {
+    const authRoutes = new Set(['login', 'register']);
+    const protectedRoutes = new Set(['cart', 'checkout', 'restaurant', 'dish', 'tracking', 'review']);
+    const inAuth = segments.includes('(auth)');
+    const inTabs = segments.includes('(tabs)');
+    const hasAuthSegment = segments.some(segment => authRoutes.has(segment));
+    const hasProtectedSegment = segments.some(segment => protectedRoutes.has(segment));
+
+    return {
+      inTabsGroup: inTabs,
+      isAuthRoute: inAuth || hasAuthSegment,
+      isProtectedRoute: inTabs || hasProtectedSegment,
+    };
+  }, [segments]);
+
+  useEffect(() => {
+    lastRedirectRef.current = null;
+  }, [pathname]);
+
+  const safeReplace = useCallback(
+    (target: string) => {
+      if (!target || pathname === target || lastRedirectRef.current === target) return;
+      lastRedirectRef.current = target;
+      router.replace(target);
+    },
+    [pathname, router]
+  );
 
   // Navigation Guard
   useEffect(() => {
     if (isLoading) return;
 
-    const firstSegment = segments[0];
-    const protectedRoutes = ['(tabs)', 'cart', 'checkout', 'restaurant', 'dish', 'tracking', 'review'];
-    const isProtectedRoute = protectedRoutes.some(route => firstSegment === route || firstSegment?.startsWith(route));
-    const isAuthRoute = firstSegment === '(auth)' || firstSegment === 'login' || firstSegment === 'register';
-
-    console.log('🛡️ [NavigationGuard]', { segment: firstSegment, isAuthenticated, isProtectedRoute, isAuthRoute });
-
     if (!isAuthenticated && isProtectedRoute) {
-      console.log('🔒 Redirecting to login...');
-      router.replace('/login');
+      safeReplace('/login');
     } else if (isAuthenticated && isAuthRoute) {
-      console.log('✅ Redirecting to home...');
-      router.replace('/(tabs)');
+      safeReplace('/(tabs)');
     }
-  }, [segments, isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, isProtectedRoute, isAuthRoute, safeReplace]);
 
   useEffect(() => {
-    if (segments[0] === '(tabs)' && !isLoading && !isAuthenticated) {
-      refreshAuth();
+    if (isLoading) return;
+    if (!inTabsGroup) {
+      refreshAttemptedRef.current = false;
+      return;
     }
-  }, [segments, isLoading, isAuthenticated, refreshAuth]);
+    if (isAuthenticated) {
+      refreshAttemptedRef.current = false;
+      return;
+    }
+    if (refreshAttemptedRef.current || refreshInFlightRef.current) return;
+
+    refreshAttemptedRef.current = true;
+    refreshInFlightRef.current = true;
+    refreshAuth().finally(() => {
+      refreshInFlightRef.current = false;
+    });
+  }, [inTabsGroup, isLoading, isAuthenticated, refreshAuth]);
 
   if (isLoading) {
     return (
