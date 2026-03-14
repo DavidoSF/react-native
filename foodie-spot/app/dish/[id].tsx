@@ -7,8 +7,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { ArrowLeft, Minus, Plus } from "lucide-react-native";
+import { useCart } from "@/contexts/cart-context";
 
 export default function DishScreen() {
+    const { addItem } = useCart();
     const { id } = useLocalSearchParams<{ id: string }>();
     const [dish, setDish] = useState<Dish | null>(null);
     const [quantity, setQuantity] = useState<number>(1);
@@ -63,7 +65,14 @@ export default function DishScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                    <TouchableOpacity style={styles.addButton}>
+                    <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={() => {
+                            if (dish) {
+                                addItem(dish, quantity);
+                            }
+                        }}
+                    >
                         <Text style={styles.addButtonText}>Ajouter au panier</Text>
                     </TouchableOpacity>
                 </View>

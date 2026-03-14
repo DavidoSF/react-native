@@ -15,6 +15,11 @@ import { ToastProvider } from '@/components/toast-provider';
 import { useOffline } from '@/hooks/use-offline';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
+import { AppThemeProvider } from '@/contexts/theme-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { CartProvider } from '@/contexts/cart-context';
+import { CartSummaryBar } from '@/components/cart-summary-bar';
+import { CartAnimationOverlay } from '@/components/cart-animation';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -22,6 +27,7 @@ export const unstable_settings = {
 
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
+  const { colors } = useAppTheme();
   const { isOnline, pendingCount, isSyncing, syncNow } = useOffline();
   const { isAuthenticated, isLoading, refreshAuth } = useAuth();
   const segments = useSegments();
@@ -55,10 +61,10 @@ function RootLayoutContent() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <Text style={styles.loadingLogo}>🍔</Text>
-        <ActivityIndicator size="large" color={Colors.light.tint} />
-        <Text style={styles.loadingText}>Chargement...</Text>
+        <ActivityIndicator size="large" color={colors.tint} />
+        <Text style={[styles.loadingText, { color: colors.mutedText }]}>Chargement...</Text>
       </View>
     );
   }
@@ -94,6 +100,9 @@ function RootLayoutContent() {
         <Stack.Screen name="review/[orderId]" options={{ presentation: 'modal' }} />
       </Stack>
 
+      <CartSummaryBar />
+      <CartAnimationOverlay />
+
       <StatusBar style="auto" />
     </ThemeProvider>
   );
@@ -113,9 +122,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ToastProvider>
-        <AuthProvider>
-          <RootLayoutContent />
-        </AuthProvider>
+          <AuthProvider>
+            <AppThemeProvider>
+              <CartProvider>
+                <RootLayoutContent />
+              </CartProvider>
+            </AppThemeProvider>
+          </AuthProvider>
         </ToastProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
