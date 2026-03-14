@@ -19,6 +19,15 @@ export interface Restaurant {
     isFavorite: boolean;
 }
 
+export interface Category {
+    id: string;
+    name: string;
+    slug: string;
+    icon: string;
+    image: string;
+    restaurantCount: number;
+}
+
 export interface SearchFilters {
     cuisine?: string;
     priceRange?: string;

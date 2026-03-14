@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
-    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -13,28 +12,44 @@ import { useRouter } from "expo-router";
 import { RestaurantCard } from "@/components/restaurant-card";
 import { Brand, Colors } from "@/constants/theme";
 import { useI18n } from "@/contexts/i18n-context";
-import { restaurantAPI } from "@/services/api";
-import { Restaurant, SearchFilters } from "@/types";
+import { categoryAPI, restaurantAPI } from "@/services/api";
+import { Category, Restaurant, SearchFilters } from "@/types";
 import { Filter, Search } from "lucide-react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const CUISINE_FILTERS = ['Burger', 'Pizza', 'Sushi', 'Healthy', 'Desserts'] as const;
+const DEBOUNCE_MS = 400;
 
 export default function SearchScreen() {
     const router = useRouter();
     const { t } = useI18n();
     const [query, setQuery] = useState('');
+    const [debouncedQuery, setDebouncedQuery] = useState('');
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [filters, setFilters] = useState<SearchFilters>({});
     const [showFilters, setShowFilters] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+    // Debounce: propagate query to debouncedQuery after 400 ms of inactivity
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedQuery(query), DEBOUNCE_MS);
+        return () => clearTimeout(timer);
+    }, [query]);
+
+    // Load categories once on mount
+    useEffect(() => {
+        setCategoriesLoading(true);
+        categoryAPI.getCategories()
+            .then(setCategories)
+            .finally(() => setCategoriesLoading(false));
+    }, []);
 
     const loadRestaurants = useCallback(async () => {
         setLoading(true);
         try {
-            if (query) {
-                const data = await restaurantAPI.searchRestaurants(query);
+            if (debouncedQuery) {
+                const data = await restaurantAPI.searchRestaurants(debouncedQuery);
                 setRestaurants(data);
             } else {
                 const data = await restaurantAPI.getRestaurants(filters);
@@ -43,7 +58,7 @@ export default function SearchScreen() {
         } finally {
             setLoading(false);
         }
-    }, [query, filters]);
+    }, [debouncedQuery, filters]);
 
     useEffect(() => {
         loadRestaurants();
@@ -61,6 +76,23 @@ export default function SearchScreen() {
             ? `1 ${t.search.resultsOne}`
             : `${restaurants.length} ${t.search.resultsMany}`;
 
+    const renderFilterChip = ({ item }: { item: Category }) => {
+        const active = filters.cuisine === item.name;
+        return (
+            <TouchableOpacity
+                style={[styles.filterChip, active && styles.filterChipActive]}
+                onPress={() => toggleCuisine(item.name)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: active }}
+            >
+                <Text style={styles.filterChipIcon}>{item.icon}</Text>
+                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                    {item.name}
+                </Text>
+            </TouchableOpacity>
+        );
+    };
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Search bar */}
@@ -77,38 +109,29 @@ export default function SearchScreen() {
                     />
                 </View>
                 <TouchableOpacity
-                    style={styles.filterButton}
+                    style={[styles.filterButton, showFilters && styles.filterButtonActive]}
                     onPress={() => setShowFilters((v) => !v)}
                     accessibilityLabel={t.search.filterToggle}
                 >
-                    <Filter size={24} color={Colors.light.text} />
+                    <Filter size={24} color={showFilters ? Brand.primary : Colors.light.text} />
                 </TouchableOpacity>
             </View>
 
             {/* Cuisine filter chips */}
             {showFilters && (
                 <View style={styles.filters}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {CUISINE_FILTERS.map((cuisine) => (
-                            <TouchableOpacity
-                                key={cuisine}
-                                style={[
-                                    styles.filterChip,
-                                    filters.cuisine === cuisine && styles.filterChipActive,
-                                ]}
-                                onPress={() => toggleCuisine(cuisine)}
-                            >
-                                <Text
-                                    style={[
-                                        styles.filterChipText,
-                                        filters.cuisine === cuisine && styles.filterChipTextActive,
-                                    ]}
-                                >
-                                    {cuisine}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                    {categoriesLoading ? (
+                        <ActivityIndicator size="small" color={Brand.primary} style={styles.chipsLoader} />
+                    ) : (
+                        <FlatList
+                            data={categories}
+                            keyExtractor={(item) => item.id}
+                            renderItem={renderFilterChip}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.chipsContent}
+                        />
+                    )}
                 </View>
             )}
 
@@ -135,7 +158,9 @@ export default function SearchScreen() {
                             <Text style={styles.stateText}>{t.common.loading}</Text>
                         </View>
                     ) : (
-                        <Text style={styles.emptyText}>{t.search.noResults}</Text>
+                        <View style={styles.centeredState}>
+                            <Text style={styles.emptyText}>{t.search.noResults}</Text>
+                        </View>
                     )
                 }
                 showsVerticalScrollIndicator={false}
@@ -178,54 +203,75 @@ const styles = StyleSheet.create({
         minHeight: 44,
         alignItems: 'center',
         justifyContent: 'center',
+        borderRadius: 22,
+    },
+    filterButtonActive: {
+        backgroundColor: Brand.primaryLight,
     },
     filters: {
-        paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
     },
-    filterChip: {
+    chipsLoader: {
+        marginHorizontal: 16,
+    },
+    chipsContent: {
         paddingHorizontal: 16,
+        gap: 8,
+    },
+    filterChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 20,
         backgroundColor: '#f5f5f5',
-        marginRight: 8,
+        borderWidth: 1.5,
+        borderColor: 'transparent',
         minHeight: 36,
-        justifyContent: 'center',
     },
     filterChipActive: {
-        backgroundColor: Brand.primary,
+        backgroundColor: Brand.primaryLight,
+        borderColor: Brand.primary,
+    },
+    filterChipIcon: {
+        fontSize: 14,
     },
     filterChipText: {
-        fontSize: 14,
-        color: '#666',
+        fontSize: 13,
+        color: '#444',
+        fontWeight: '500',
     },
     filterChipTextActive: {
-        color: '#fff',
-        fontWeight: '600',
+        color: Brand.primary,
+        fontWeight: '700',
     },
     listContent: {
         padding: 16,
-        paddingBottom: 24,
+        gap: 12,
+        flexGrow: 1,
     },
     resultsText: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 16,
+        fontSize: 13,
+        color: '#888',
+        marginBottom: 8,
     },
     centeredState: {
+        flex: 1,
         alignItems: 'center',
-        paddingVertical: 32,
-        gap: 12,
+        justifyContent: 'center',
+        paddingTop: 64,
     },
     stateText: {
-        color: '#666',
-        fontSize: 14,
+        marginTop: 12,
+        color: '#888',
     },
     emptyText: {
-        color: '#666',
         textAlign: 'center',
-        paddingVertical: 32,
+        color: '#888',
+        fontSize: 15,
     },
 });
+
