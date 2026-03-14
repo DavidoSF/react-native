@@ -53,7 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       setError(null);
       const result = await auth.login(credentials);
-      await new Promise(resolve => setTimeout(resolve, 100));
       const state = await auth.getAuthState();
       setUser(state.user);
       setIsAuthenticated(state.isAuthenticated);
@@ -75,7 +74,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       setError(null);
       const result = await auth.register(data);
-      await new Promise(resolve => setTimeout(resolve, 100));
       const state = await auth.getAuthState();
       setUser(state.user);
       setIsAuthenticated(state.isAuthenticated);

@@ -9,20 +9,36 @@ import { useAuth } from '@/contexts/auth-context';
 import { Colors } from '@/constants/theme';
 
 export default function LoginScreen() {
-  const { login, isLoading, error } = useAuth();
+  const { login, isLoading, error, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
+  const MIN_PASSWORD_LENGTH = 8;
+  const EMAIL_REGEX = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/;
 
   const handleLogin = async () => {
-    if (!email.trim()) { setLocalError('Veuillez entrer votre email'); return; }
-    if (!email.includes('@')) { setLocalError('Email invalide'); return; }
-    if (!password) { setLocalError('Veuillez entrer votre mot de passe'); return; }
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setLocalError('Veuillez entrer votre email.');
+      return;
+    }
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      setLocalError('Veuillez saisir un email valide (ex: nom@domaine.com).');
+      return;
+    }
+    if (!password) {
+      setLocalError('Veuillez entrer votre mot de passe.');
+      return;
+    }
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setLocalError(`Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caracteres.`);
+      return;
+    }
 
     setLocalError('');
     try {
-      await login({ email: email.trim(), password });
+      await login({ email: trimmedEmail, password });
     } catch (err) {
       console.log('Login error handled');
     }
@@ -49,12 +65,38 @@ export default function LoginScreen() {
           <View style={styles.form}>
             <View style={styles.inputContainer}>
               <Mail size={20} color="#999" />
-              <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#999" value={email} onChangeText={t => { setEmail(t); setLocalError(''); }} keyboardType="email-address" autoCapitalize="none" editable={!isLoading} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="#999"
+                value={email}
+                onChangeText={t => {
+                  setEmail(t);
+                  setLocalError('');
+                  clearError();
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isLoading}
+              />
             </View>
 
             <View style={styles.inputContainer}>
               <Lock size={20} color="#999" />
-              <TextInput style={styles.input} placeholder="Mot de passe" placeholderTextColor="#999" value={password} onChangeText={t => { setPassword(t); setLocalError(''); }} secureTextEntry={!showPassword} editable={!isLoading} />
+              <TextInput
+                style={styles.input}
+                placeholder="Mot de passe"
+                placeholderTextColor="#999"
+                value={password}
+                onChangeText={t => {
+                  setPassword(t);
+                  setLocalError('');
+                  clearError();
+                }}
+                secureTextEntry={!showPassword}
+                editable={!isLoading}
+              />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeOff size={20} color="#999" /> : <Eye size={20} color="#999" />}
               </TouchableOpacity>
@@ -74,7 +116,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <View style={styles.demoHint}>
-            <Text style={styles.demoHintText}>💡 Pour tester, utilisez n'importe quel email/mot de passe</Text>
+            <Text style={styles.demoHintText}>💡 Pour tester, utilisez un email valide et un mot de passe de 8 caracteres</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
