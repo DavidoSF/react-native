@@ -5,8 +5,7 @@ import { router } from 'expo-router';
 import { MapPin, Heart, ShoppingBag, Phone, Share2, Camera, ChevronRight, LogOut, Globe } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-import { userAPI, uploadAPI } from '@/services/api';
-import type { User } from '@/types';
+import { userAPI, uploadAPI, orderAPI } from '@/services/api';
 import log from '@/services/logger';
 import { useToast } from '@/components/toast-provider';
 import { useAuth } from '@/contexts/auth-context';
@@ -18,17 +17,28 @@ export default function ProfileScreen() {
   const { logout } = useAuth();
   const { t, language, setLanguage } = useI18n();
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Record<string, any> | null>(null);
+  const [orderCount, setOrderCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadUser();
+    orderAPI.getOrders().then((data) => setOrderCount(data.length));
   }, []);
 
   const loadUser = async () => {
-    const userData = await userAPI.getCurrentUser();
-    setUser(userData ? { ...userData, favoriteRestaurants: userData.favoriteRestaurants || [] } : null);
-    setLoading(false);
+    try {
+      const data = await userAPI.getProfile();
+      if (data) {
+        setUser({
+          ...data,
+          name: data.name || [data.firstName, data.lastName].filter(Boolean).join(' '),
+          favoriteRestaurants: data.favoriteRestaurants || [],
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePickImage = async () => {
@@ -84,8 +94,8 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <View style={styles.profileContainer}>
             <View style={styles.avatarContainer}>
-              {user?.photo ? (
-                <Image source={{ uri: user.photo }} style={styles.avatar} />
+              {user?.avatar ? (
+                <Image source={{ uri: user.avatar }} style={styles.avatar} />
               ) : (
                 <View style={styles.avatarPlaceholder}>
                   <Text style={styles.avatarText}>
@@ -106,7 +116,7 @@ export default function ProfileScreen() {
         {/* Stats */}
         <View style={styles.stats}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statValue}>{orderCount ?? '…'}</Text>
             <Text style={styles.statLabel}>{t.orders.title}</Text>
           </View>
           <View style={styles.statDivider} />
@@ -116,8 +126,8 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>4.8</Text>
-            <Text style={styles.statLabel}>{language === 'fr' ? 'Avis' : 'Reviews'}</Text>
+            <Text style={styles.statValue}>{user?.addresses?.length ?? 0}</Text>
+            <Text style={styles.statLabel}>{language === 'fr' ? 'Adresses' : 'Addresses'}</Text>
           </View>
         </View>
 
@@ -134,7 +144,7 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert(language === 'fr' ? 'Bientôt disponible' : 'Coming soon', language === 'fr' ? 'La liste de favoris arrive prochainement.' : 'Favorites list coming soon.')}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/favorites')}>
             <Heart size={20} color="#666" />
             <Text style={styles.menuText}>{language === 'fr' ? 'Mes favoris' : 'My favourites'}</Text>
             <View style={styles.menuRight}>
