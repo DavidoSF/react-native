@@ -48,6 +48,10 @@ export interface Translations {
   orders: {
     title: string;
     noOrders: string;
+    all: string;
+    inProgress: string;
+    delivered: string;
+    cancelled: string;
   };
   notifications: {
     title: string;
@@ -113,7 +117,11 @@ const fr: Translations = {
   },
   orders: {
     title: 'Mes commandes',
-    noOrders: 'Aucune commande',
+    noOrders: 'Aucune commande pour ce filtre.',
+    all: 'Tout',
+    inProgress: 'En cours',
+    delivered: 'Livré',
+    cancelled: 'Annulé',
   },
   notifications: {
     title: 'Notifications',
@@ -176,7 +184,11 @@ const en: Translations = {
   },
   orders: {
     title: 'My orders',
-    noOrders: 'No orders',
+    noOrders: 'No orders for this filter.',
+    all: 'All',
+    inProgress: 'In progress',
+    delivered: 'Delivered',
+    cancelled: 'Cancelled',
   },
   notifications: {
     title: 'Notifications',
