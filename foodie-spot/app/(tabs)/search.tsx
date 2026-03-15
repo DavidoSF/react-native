@@ -1,18 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { RestaurantCard } from "@/components/restaurant-card";
 import { Colors } from "@/constants/theme";
 import { restaurantAPI } from "@/services/api";
+import { storage, STORAGE_KEYS } from "@/services/storage";
 import { Restaurant, SearchFilters } from "@/types";
 import { Filter, Search } from "lucide-react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const MAX_RECENT_SEARCHES = 8;
+
 export default function SearchScreen() {
     const router = useRouter();
     const [query, setQuery] = useState('');
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+    const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
+    const [recentSearches, setRecentSearches] = useState<string[]>([]);
     const [filters, setFilters] = useState<SearchFilters>({});
     const [showFilters, setShowFilters] = useState(false);
 
@@ -20,14 +25,83 @@ export default function SearchScreen() {
         loadRestaurants();
     }, [query, filters]);
 
+    useEffect(() => {
+        loadRecentSearches();
+    }, []);
+
+    const normalizedQuery = query.trim().toLowerCase();
+    const isQueryEmpty = normalizedQuery.length === 0;
+
+    const suggestions = useMemo(() => {
+        if (!normalizedQuery) {
+            return [];
+        }
+        const suggestionPool = [
+            ...allRestaurants.map(restaurant => restaurant.name),
+            ...allRestaurants.map(restaurant => restaurant.cuisine),
+        ];
+        const uniqueSuggestions = Array.from(
+            new Set(suggestionPool.map(item => item.trim()).filter(Boolean))
+        );
+        return uniqueSuggestions
+            .filter(item => item.toLowerCase().includes(normalizedQuery))
+            .slice(0, 8);
+    }, [allRestaurants, normalizedQuery]);
+
     const loadRestaurants = async () => {
-        if (query) {
-            const data = await restaurantAPI.searchRestaurants(query);
+        const trimmedQuery = query.trim();
+        if (trimmedQuery) {
+            const data = await restaurantAPI.searchRestaurants(trimmedQuery);
             setRestaurants(data);
         } else {
             const data = await restaurantAPI.getRestaurants(filters);
             setRestaurants(data);
+            setAllRestaurants(data);
         }
+    };
+
+    const loadRecentSearches = async () => {
+        const stored = await storage.getItem<string[]>(STORAGE_KEYS.RECENT_SEARCHES);
+        if (stored && Array.isArray(stored)) {
+            setRecentSearches(stored);
+        }
+    };
+
+    const saveRecentSearch = async (term: string) => {
+        const trimmed = term.trim();
+        if (!trimmed) {
+            return;
+        }
+        try {
+            const updated = [
+                trimmed,
+                ...recentSearches.filter(item => item.toLowerCase() !== trimmed.toLowerCase()),
+            ].slice(0, MAX_RECENT_SEARCHES);
+            setRecentSearches(updated);
+            await storage.setItem(STORAGE_KEYS.RECENT_SEARCHES, updated);
+        } catch {
+            // ignore storage errors
+        }
+    };
+
+    const handleSubmitSearch = async () => {
+        if (!query.trim()) {
+            return;
+        }
+        await saveRecentSearch(query);
+        setQuery(query.trim());
+    };
+
+    const handleSuggestionPress = async (term: string) => {
+        await saveRecentSearch(term);
+        setQuery(term);
+    };
+
+    const handleRestaurantPress = async (restaurantId: string) => {
+        if (query.trim()) {
+            await saveRecentSearch(query);
+        }
+        router.push(`/restaurant/${restaurantId}`);
     };
 
     return (
@@ -40,6 +114,8 @@ export default function SearchScreen() {
                         placeholder="Rechercher un restaurant"
                         value={query}
                         onChangeText={setQuery}
+                        onSubmitEditing={handleSubmitSearch}
+                        returnKeyType="search"
                     />
                 </View>
                 <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilters(!showFilters)}>
@@ -62,13 +138,42 @@ export default function SearchScreen() {
                 )
             }
 
-            <ScrollView style={styles.content}>
+            <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
+                {isQueryEmpty && recentSearches.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Recherches récentes</Text>
+                        <View style={styles.chipRow}>
+                            {recentSearches.map((term) => (
+                                <TouchableOpacity key={term} style={styles.chip} onPress={() => handleSuggestionPress(term)}>
+                                    <Text style={styles.chipText}>{term}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                )}
+
+                {!isQueryEmpty && suggestions.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Suggestions</Text>
+                        {suggestions.map((term) => (
+                            <TouchableOpacity key={term} style={styles.suggestionRow} onPress={() => handleSuggestionPress(term)}>
+                                <Search size={18} color={Colors.light.icon} />
+                                <Text style={styles.suggestionText}>{term}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+
                 <Text style={styles.resultsText}>
 
                     {restaurants.length} {restaurants.length > 1 ? 'restaurants' : 'restaurant'} trouvés
                 </Text>
                 {restaurants.map((restaurant) => (
-                    <RestaurantCard key={restaurant.id} restaurant={restaurant} onPress={() => router.push(`/restaurant/${restaurant.id}`)} />
+                    <RestaurantCard
+                        key={restaurant.id}
+                        restaurant={restaurant}
+                        onPress={() => handleRestaurantPress(restaurant.id)}
+                    />
                 ))}
             </ScrollView>
         </SafeAreaView>
@@ -129,6 +234,42 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         padding: 16,
+    },
+    section: {
+        marginBottom: 20,
+    },
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#222',
+        marginBottom: 10,
+    },
+    chipRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    chip: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 18,
+        backgroundColor: '#f5f5f5',
+    },
+    chipText: {
+        fontSize: 14,
+        color: '#444',
+    },
+    suggestionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+    suggestionText: {
+        fontSize: 16,
+        color: '#222',
     },
     resultsText: {
         fontSize: 14,
