@@ -4,7 +4,7 @@ import axios from 'axios';
 
 import { storage, STORAGE_KEYS } from '@/services/storage';
 import { auth } from './auth'; // used to fetch token from SecureStore
-import { Dish, Order, Restaurant, SearchFilters, User } from '@/types';
+import { Dish, Order, Restaurant, Review, SearchFilters, User } from '@/types';
 import log from './logger';
 import config from '@/constants/config';
 
@@ -268,6 +268,26 @@ export const orderAPI = {
         }
     },
 }
+
+export const reviewAPI = {
+    async getRestaurantReviews(restaurantId: string): Promise<Review[]> {
+        const isConnected = await checkConnection();
+
+        if (!isConnected) {
+            const cached = await cache.get<Review[]>(`reviews_${restaurantId}`);
+            return cached && cached.length > 0 ? cached : [];
+        }
+
+        try {
+            const response = await api.get(`/restaurants/${restaurantId}/reviews`);
+            const reviews = response.data?.data || response.data || [];
+            await cache.set(`reviews_${restaurantId}`, reviews);
+            return reviews;
+        } catch (error) {
+            return (await cache.get<Review[]>(`reviews_${restaurantId}`)) || [];
+        }
+    },
+};
 
 export const uploadAPI = {
     async uploadImage(uri: string, type: 'profile' | 'review'): Promise<string> {

@@ -25,6 +25,9 @@ export default function ReviewScreen() {
     restaurantId?: string;
   }>();
   const [rating, setRating] = useState<number>(5);
+  const [qualityRating, setQualityRating] = useState<number>(5);
+  const [speedRating, setSpeedRating] = useState<number>(5);
+  const [presentationRating, setPresentationRating] = useState<number>(5);
   const [comment, setComment] = useState('');
   const [images, setImages] = useState<ReviewImage[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,6 +91,9 @@ export default function ReviewScreen() {
       const formData = new FormData();
       formData.append('restaurantId', safeRestaurantId);
       formData.append('rating', String(rating));
+      formData.append('qualityRating', String(qualityRating));
+      formData.append('speedRating', String(speedRating));
+      formData.append('presentationRating', String(presentationRating));
       formData.append('comment', comment.trim());
 
       if (orderId && !String(orderId).startsWith('demo-')) {
@@ -155,6 +161,55 @@ export default function ReviewScreen() {
             ))}
           </View>
           <Text style={styles.ratingLabel}>{ratingLabel}</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Sous-notes</Text>
+          <View style={styles.subRatingRow}>
+            <Text style={styles.subRatingLabel}>Qualite</Text>
+            <View style={styles.ratingRow}>
+              {ratingValues.map((value) => (
+                <TouchableOpacity key={`quality-${value}`} onPress={() => setQualityRating(value)}>
+                  <Ionicons
+                    name={value <= qualityRating ? 'star' : 'star-outline'}
+                    size={22}
+                    color={value <= qualityRating ? colors.warning : colors.border}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <View style={styles.subRatingRow}>
+            <Text style={styles.subRatingLabel}>Vitesse</Text>
+            <View style={styles.ratingRow}>
+              {ratingValues.map((value) => (
+                <TouchableOpacity key={`speed-${value}`} onPress={() => setSpeedRating(value)}>
+                  <Ionicons
+                    name={value <= speedRating ? 'star' : 'star-outline'}
+                    size={22}
+                    color={value <= speedRating ? colors.warning : colors.border}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <View style={styles.subRatingRow}>
+            <Text style={styles.subRatingLabel}>Presentation</Text>
+            <View style={styles.ratingRow}>
+              {ratingValues.map((value) => (
+                <TouchableOpacity
+                  key={`presentation-${value}`}
+                  onPress={() => setPresentationRating(value)}
+                >
+                  <Ionicons
+                    name={value <= presentationRating ? 'star' : 'star-outline'}
+                    size={22}
+                    color={value <= presentationRating ? colors.warning : colors.border}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
 
         <View style={styles.card}>
@@ -235,6 +290,16 @@ const createStyles = (colors: typeof Colors.light) =>
     ratingRow: {
       flexDirection: 'row',
       gap: 6,
+    },
+    subRatingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    subRatingLabel: {
+      color: colors.mutedText,
+      fontWeight: '600',
+      width: 90,
     },
     ratingLabel: {
       color: colors.mutedText,

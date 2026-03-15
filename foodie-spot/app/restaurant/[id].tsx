@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Dish, Restaurant } from "@/types";
+import { Dish, Restaurant, Review } from "@/types";
 import { router, useLocalSearchParams } from "expo-router";
-import { restaurantAPI, userAPI } from "@/services/api";
+import { restaurantAPI, reviewAPI, userAPI } from "@/services/api";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { ArrowLeft, Clock, Heart, MapPin, Navigation, Phone, Share2, Star } from "lucide-react-native";
@@ -12,6 +12,7 @@ export default function RestaurantScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
     const [menu, setMenu] = useState<Dish[]>([]);
+    const [reviews, setReviews] = useState<Review[]>([]);
     const [isFavorite, setIsFavorite] = useState(false);
 
     useEffect(() => {
@@ -21,8 +22,10 @@ export default function RestaurantScreen() {
     const loadRestaurant = async () => {
         const restaurantData = await restaurantAPI.getRestaurantById(id);
         const menuData = await restaurantAPI.getMenu(id);
+        const reviewData = await reviewAPI.getRestaurantReviews(id);
         setRestaurant(restaurantData);
         setMenu(menuData);
+        setReviews(reviewData);
         setIsFavorite(restaurantData?.isFavorite || false);
     };
     const handleToggleFavorite = async () => {
@@ -103,6 +106,45 @@ export default function RestaurantScreen() {
                         ))}  
                 </View>
 
+                <View style={styles.reviewsSection}>
+                    <Text style={styles.menuTitle}>Avis clients</Text>
+                    {reviews.length === 0 ? (
+                        <Text style={styles.emptyReviews}>Aucun avis pour le moment.</Text>
+                    ) : (
+                        reviews.map((review) => (
+                            <View key={review.id} style={styles.reviewCard}>
+                                <View style={styles.reviewHeader}>
+                                    <Text style={styles.reviewAuthor}>{review.userName}</Text>
+                                    <View style={styles.reviewRating}>
+                                        <Star size={14} color="#FFC107" fill="#FFC107" />
+                                        <Text style={styles.reviewRatingText}>{review.rating}</Text>
+                                    </View>
+                                </View>
+                                {!!review.comment && (
+                                    <Text style={styles.reviewComment}>{review.comment}</Text>
+                                )}
+                                {!!review.images?.length && (
+                                    <View style={styles.reviewImages}>
+                                        {review.images.slice(0, 3).map((uri, index) => (
+                                            <Image key={`${review.id}-${index}`} source={{ uri }} style={styles.reviewImage} />
+                                        ))}
+                                    </View>
+                                )}
+                                <View style={styles.subRatings}>
+                                    {review.qualityRating ? (
+                                        <Text style={styles.subRatingText}>Qualite: {review.qualityRating}/5</Text>
+                                    ) : null}
+                                    {review.speedRating ? (
+                                        <Text style={styles.subRatingText}>Vitesse: {review.speedRating}/5</Text>
+                                    ) : null}
+                                    {review.presentationRating ? (
+                                        <Text style={styles.subRatingText}>Presentation: {review.presentationRating}/5</Text>
+                                    ) : null}
+                                </View>
+                            </View>
+                        ))
+                    )}
+                </View>
 
             </ScrollView>
         </SafeAreaView>
@@ -218,5 +260,57 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         marginBottom: 16,
-    }
+    },
+    reviewsSection: {
+        padding: 16,
+        gap: 12,
+    },
+    emptyReviews: {
+        color: '#666',
+    },
+    reviewCard: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
+        gap: 8,
+    },
+    reviewHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    reviewAuthor: {
+        fontWeight: '700',
+    },
+    reviewRating: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    reviewRatingText: {
+        fontWeight: '600',
+    },
+    reviewComment: {
+        color: '#666',
+    },
+    reviewImages: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    reviewImage: {
+        width: 64,
+        height: 64,
+        borderRadius: 8,
+    },
+    subRatings: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    subRatingText: {
+        fontSize: 12,
+        color: '#999',
+    },
 });

@@ -90,6 +90,24 @@ export interface Order {
     };
 }
 
+export interface Review {
+    id: string;
+    userId: string;
+    userName: string;
+    userAvatar?: string;
+    restaurantId: string;
+    orderId?: string;
+    rating: number;
+    qualityRating?: number | null;
+    speedRating?: number | null;
+    presentationRating?: number | null;
+    comment?: string;
+    images?: string[];
+    likes?: number;
+    isVerifiedPurchase?: boolean;
+    createdAt: string;
+}
+
 export interface ToastMessage {
     id: string;
     message: string;
