@@ -4,7 +4,7 @@ import axios from 'axios';
 
 import { storage, STORAGE_KEYS } from '@/services/storage';
 import { auth } from './auth'; // used to fetch token from SecureStore
-import { Dish, Order, Restaurant, SearchFilters, User } from '@/types';
+import { Dish, Order, PromoValidationResult, Restaurant, SearchFilters, User } from '@/types';
 import log from './logger';
 import config from '@/constants/config';
 
@@ -224,6 +224,22 @@ export const userAPI = {
         log.info('User logged out, cache cleared');
     }
 
+}
+
+export const promoAPI = {
+    async validatePromo(code: string, subtotal: number, restaurantId?: string): Promise<PromoValidationResult> {
+        try {
+            const response = await api.post('/promos/validate', {
+                code,
+                subtotal,
+                restaurantId,
+            });
+            return response.data?.data;
+        } catch (error) {
+            log.error('Failed to validate promo code', error);
+            throw error;
+        }
+    }
 }
 
 

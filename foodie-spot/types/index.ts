@@ -46,6 +46,17 @@ export interface CartItem {
     specialInstructions?: string;
 }
 
+export interface PromoValidationResult {
+    code: string;
+    discount: number | 'free_delivery';
+    type: 'percent' | 'fixed' | 'delivery';
+    description?: string;
+    minOrder?: number;
+    maxDiscount?: number;
+    message?: string;
+    validUntil?: string;
+}
+
 export interface User {
     id: string;
     name: string;
