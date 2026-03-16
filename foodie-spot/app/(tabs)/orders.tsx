@@ -1,6 +1,6 @@
 import { OrderCard } from "@/components/order-card";
 import { orderAPI } from "@/services/api";
-import { Order } from "@/types";
+import { Order, OrderStatus } from "@/types";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -31,6 +31,16 @@ export default function OrdersScreen() {
     }
 
 
+    const trackableStatuses: OrderStatus[] = [
+        'pending',
+        'confirmed',
+        'preparing',
+        'ready',
+        'picked_up',
+        'delivering',
+        'on-the-way',
+    ];
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
@@ -51,7 +61,7 @@ export default function OrdersScreen() {
                             key={order.id}
                             order={order}
                             onPress={() => {
-                                if ((order.status === 'on-the-way' || order.status === 'preparing') && order.id) {
+                                if (trackableStatuses.includes(order.status) && order.id) {
                                     router.push(`/tracking/${order.id}`);
                                 }
                             }}
