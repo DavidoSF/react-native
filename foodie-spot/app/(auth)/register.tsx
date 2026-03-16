@@ -1,14 +1,18 @@
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/auth-context';
 import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function RegisterScreen() {
   const { register, isLoading, error, clearError } = useAuth();
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -91,10 +95,11 @@ export default function RegisterScreen() {
             <View style={styles.nameRow}>
               <View style={[styles.fieldGroup, { flex: 1 }]}>
                 <View style={styles.inputContainer}>
-                  <User size={20} color="#999" />
+                  <User size={20} color={theme.textSecondary} />
                   <TextInput
                     style={styles.input}
                     placeholder="Prénom"
+                    placeholderTextColor={theme.placeholder}
                     value={firstName}
                     onChangeText={t => {
                       setFirstName(t);
@@ -111,6 +116,7 @@ export default function RegisterScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Nom"
+                    placeholderTextColor={theme.placeholder}
                     value={lastName}
                     onChangeText={t => {
                       setLastName(t);
@@ -126,10 +132,11 @@ export default function RegisterScreen() {
 
             <View style={styles.fieldGroup}>
               <View style={styles.inputContainer}>
-                <Mail size={20} color="#999" />
+                <Mail size={20} color={theme.textSecondary} />
                 <TextInput
                   style={styles.input}
                   placeholder="Email"
+                  placeholderTextColor={theme.placeholder}
                   value={email}
                   onChangeText={t => {
                     setEmail(t);
@@ -147,10 +154,11 @@ export default function RegisterScreen() {
 
             <View style={styles.fieldGroup}>
               <View style={styles.inputContainer}>
-                <Phone size={20} color="#999" />
+                <Phone size={20} color={theme.textSecondary} />
                 <TextInput
                   style={styles.input}
                   placeholder="Téléphone (optionnel)"
+                  placeholderTextColor={theme.placeholder}
                   value={phone}
                   onChangeText={t => {
                     setPhone(t);
@@ -165,10 +173,11 @@ export default function RegisterScreen() {
 
             <View style={styles.fieldGroup}>
               <View style={styles.inputContainer}>
-                <Lock size={20} color="#999" />
+                <Lock size={20} color={theme.textSecondary} />
                 <TextInput
                   style={styles.input}
                   placeholder="Mot de passe"
+                  placeholderTextColor={theme.placeholder}
                   value={password}
                   onChangeText={t => {
                     setPassword(t);
@@ -179,7 +188,7 @@ export default function RegisterScreen() {
                   editable={!isLoading}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <EyeOff size={20} color="#999" /> : <Eye size={20} color="#999" />}
+                  {showPassword ? <EyeOff size={20} color={theme.textSecondary} /> : <Eye size={20} color={theme.textSecondary} />}
                 </TouchableOpacity>
               </View>
               {fieldErrors.password ? <Text style={styles.fieldError}>{fieldErrors.password}</Text> : null}
@@ -187,10 +196,11 @@ export default function RegisterScreen() {
 
             <View style={styles.fieldGroup}>
               <View style={styles.inputContainer}>
-                <Lock size={20} color="#999" />
+                <Lock size={20} color={theme.textSecondary} />
                 <TextInput
                   style={styles.input}
                   placeholder="Confirmer mot de passe"
+                  placeholderTextColor={theme.placeholder}
                   value={confirmPassword}
                   onChangeText={t => {
                     setConfirmPassword(t);
@@ -205,7 +215,7 @@ export default function RegisterScreen() {
             </View>
 
             <TouchableOpacity style={[styles.button, isLoading && styles.buttonDisabled]} onPress={handleRegister} disabled={isLoading}>
-              {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Créer mon compte</Text>}
+              {isLoading ? <ActivityIndicator color={theme.onBrand} /> : <Text style={styles.buttonText}>Créer mon compte</Text>}
             </TouchableOpacity>
           </View>
 
@@ -218,24 +228,33 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  logoContainer: { alignItems: 'center', marginBottom: 24 },
-  logo: { fontSize: 48, marginBottom: 8 },
-  title: { fontSize: 28, fontWeight: 'bold', color: Colors.light.tint },
-  errorContainer: { backgroundColor: '#FFEBEE', padding: 12, borderRadius: 12, marginBottom: 16 },
-  errorText: { color: '#D32F2F', fontSize: 14, textAlign: 'center' },
-  form: { width: '100%' },
-  nameRow: { flexDirection: 'row', gap: 12 },
-  fieldGroup: { width: '100%' },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 12, marginBottom: 12, paddingHorizontal: 16, gap: 12 },
-  input: { flex: 1, paddingVertical: 16, fontSize: 16, color: '#000' },
-  fieldError: { color: '#D32F2F', fontSize: 12, marginTop: -4, marginBottom: 8 },
-  button: { backgroundColor: Colors.light.tint, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
-  buttonDisabled: { opacity: 0.7 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  loginButton: { alignItems: 'center', padding: 16, marginTop: 16 },
-  loginText: { color: '#666', fontSize: 14 },
-  loginTextBold: { color: Colors.light.tint, fontWeight: '600' },
-});
+const createStyles = (theme: typeof Colors.light) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.background },
+    scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+    logoContainer: { alignItems: 'center', marginBottom: 24 },
+    logo: { fontSize: 48, marginBottom: 8 },
+    title: { fontSize: 28, fontWeight: 'bold', color: theme.brand },
+    errorContainer: { backgroundColor: theme.dangerSoft, padding: 12, borderRadius: 12, marginBottom: 16 },
+    errorText: { color: theme.danger, fontSize: 14, textAlign: 'center' },
+    form: { width: '100%' },
+    nameRow: { flexDirection: 'row', gap: 12 },
+    fieldGroup: { width: '100%' },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.inputBackground,
+      borderRadius: 12,
+      marginBottom: 12,
+      paddingHorizontal: 16,
+      gap: 12,
+    },
+    input: { flex: 1, paddingVertical: 16, fontSize: 16, color: theme.text },
+    fieldError: { color: theme.danger, fontSize: 12, marginTop: -4, marginBottom: 8 },
+    button: { backgroundColor: theme.brand, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
+    buttonDisabled: { opacity: 0.7 },
+    buttonText: { color: theme.onBrand, fontSize: 16, fontWeight: '600' },
+    loginButton: { alignItems: 'center', padding: 16, marginTop: 16 },
+    loginText: { color: theme.textMuted, fontSize: 14 },
+    loginTextBold: { color: theme.brand, fontWeight: '600' },
+  });

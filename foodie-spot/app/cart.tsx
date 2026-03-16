@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 type CartLine = {
   id: string;
@@ -20,6 +21,9 @@ const initialItems: CartLine[] = [
 
 export default function CartScreen() {
   const [items, setItems] = useState<CartLine[]>(initialItems);
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const summary = useMemo(() => {
     const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
@@ -110,146 +114,157 @@ export default function CartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f6f6f6',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    marginTop: 4,
-    color: '#666',
-  },
-  content: {
-    padding: 20,
-    gap: 16,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  lineItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  lineInfo: {
-    flex: 1,
-  },
-  lineName: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  lineMeta: {
-    marginTop: 4,
-    color: '#888',
-  },
-  linePrice: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  quantityControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 20,
-    paddingHorizontal: 6,
-  },
-  qtyButton: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qtyButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  qtyValue: {
-    minWidth: 24,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  summaryLabel: {
-    color: '#666',
-  },
-  summaryValue: {
-    fontWeight: '600',
-  },
-  summaryTotal: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  summaryTotalLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  summaryTotalValue: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  footer: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  ctaButton: {
-    backgroundColor: Colors.light.tint,
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-  },
-  ctaButtonDisabled: {
-    opacity: 0.5,
-  },
-  ctaText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  emptyState: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  emptySubtitle: {
-    marginTop: 6,
-    color: '#777',
-  },
-});
+const createStyles = (theme: typeof Colors.light) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.surfaceAlt,
+    },
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 8,
+      paddingBottom: 16,
+      backgroundColor: theme.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    subtitle: {
+      marginTop: 4,
+      color: theme.textMuted,
+    },
+    content: {
+      padding: 20,
+      gap: 16,
+    },
+    card: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 16,
+      gap: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    lineItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    lineInfo: {
+      flex: 1,
+    },
+    lineName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.text,
+    },
+    lineMeta: {
+      marginTop: 4,
+      color: theme.textSubtle,
+    },
+    linePrice: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.text,
+    },
+    quantityControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.surfaceMuted,
+      borderRadius: 20,
+      paddingHorizontal: 6,
+    },
+    qtyButton: {
+      width: 28,
+      height: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    qtyButtonText: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    qtyValue: {
+      minWidth: 24,
+      textAlign: 'center',
+      fontWeight: '600',
+      color: theme.text,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    summaryLabel: {
+      color: theme.textMuted,
+    },
+    summaryValue: {
+      fontWeight: '600',
+      color: theme.text,
+    },
+    summaryTotal: {
+      marginTop: 8,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    summaryTotalLabel: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    summaryTotalValue: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    footer: {
+      padding: 20,
+      backgroundColor: theme.surface,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    ctaButton: {
+      backgroundColor: theme.brand,
+      paddingVertical: 16,
+      borderRadius: 14,
+      alignItems: 'center',
+    },
+    ctaButtonDisabled: {
+      opacity: 0.5,
+    },
+    ctaText: {
+      color: theme.onBrand,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    emptyState: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 24,
+      alignItems: 'center',
+    },
+    emptyTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    emptySubtitle: {
+      marginTop: 6,
+      color: theme.textSubtle,
+    },
+  });

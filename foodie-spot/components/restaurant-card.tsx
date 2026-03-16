@@ -1,8 +1,10 @@
 import { Restaurant } from '@/types';
 import { Image } from 'expo-image';
 import { Clock, MapPin, Star } from 'lucide-react-native';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 
 interface Props {
@@ -12,6 +14,10 @@ interface Props {
 }
 
 export const RestaurantCard: React.FC<Props> = ({ restaurant, onPress, compact }) => {
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme ?? 'light'];
+    const styles = useMemo(() => createStyles(theme), [theme]);
+
     return (
         <TouchableOpacity style={[styles.card, compact && styles.compact]} onPress={onPress}>
             <Image source={{ uri: restaurant.image }} style={[styles.image, compact && styles.compactImage]} />
@@ -27,11 +33,11 @@ export const RestaurantCard: React.FC<Props> = ({ restaurant, onPress, compact }
                 <Text style={styles.cuisine}>{restaurant.cuisine}</Text>
                 <View style={styles.meta}>
                     <View style={styles.metaItem}>
-                        <Star size={16} color="#FF6B35" />
+                        <Star size={16} color={theme.brand} />
                         <Text style={styles.metaText}>{restaurant.rating} {restaurant.reviewCount} avis</Text>
                     </View>
                     <View style={styles.metaItem}>
-                        <Clock size={16} color="#FF6B35" />
+                        <Clock size={16} color={theme.brand} />
                         <Text style={styles.metaText}>
                             {typeof restaurant.deliveryTime === 'object' 
                                 ? `${restaurant.deliveryTime.min}-${restaurant.deliveryTime.max}` 
@@ -40,7 +46,7 @@ export const RestaurantCard: React.FC<Props> = ({ restaurant, onPress, compact }
                     </View>
 
                     <View style={styles.metaItem}>
-                        <MapPin size={16} color="#FF6B35" />
+                        <MapPin size={16} color={theme.brand} />
                         <Text style={styles.metaText}>{restaurant.distance ?? 15} km</Text>
                     </View>
                     {!compact && <Text style={styles.description} numberOfLines={2}>{restaurant.description}</Text>}
@@ -55,78 +61,80 @@ export const RestaurantCard: React.FC<Props> = ({ restaurant, onPress, compact }
 }
 
 
-const styles = StyleSheet.create({
-    card: {
-        flexDirection: 'row',
-        marginBottom: 16,
-        backgroundColor: '#FFF',
-        borderRadius: 16,
-        overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    compact: {
-        marginBottom: 12,
-    },
-    image: {
-        width: 120,
-        height: 120,
-    },
-    compactImage: {
-        width: 100,
-        height: 100,
-    },
-    content: {
-        flex: 1,
-        padding: 12,
-        gap: 6
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 8
-    },
-    name: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    badge: {
-        backgroundColor: '#FFE5DB',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    badgeText: {
-        color: '#FF6B35',
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    cuisine: {
-        color: '#666',
-        fontSize: 13
-    },
-    meta: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12
-    },
-    metaItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4
-    },
-    metaText: {
-        fontSize: 12,
-        color: '#666',
-    },
+const createStyles = (theme: typeof Colors.light) =>
+    StyleSheet.create({
+        card: {
+            flexDirection: 'row',
+            marginBottom: 16,
+            backgroundColor: theme.surface,
+            borderRadius: 16,
+            overflow: 'hidden',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 8,
+            elevation: 2,
+        },
+        compact: {
+            marginBottom: 12,
+        },
+        image: {
+            width: 120,
+            height: 120,
+        },
+        compactImage: {
+            width: 100,
+            height: 100,
+        },
+        content: {
+            flex: 1,
+            padding: 12,
+            gap: 6
+        },
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8
+        },
+        name: {
+            flex: 1,
+            fontSize: 16,
+            fontWeight: '700',
+            color: theme.text,
+        },
+        badge: {
+            backgroundColor: theme.brandSoft,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 8,
+        },
+        badgeText: {
+            color: theme.brand,
+            fontSize: 12,
+            fontWeight: '600',
+        },
+        cuisine: {
+            color: theme.textMuted,
+            fontSize: 13
+        },
+        meta: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12
+        },
+        metaItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4
+        },
+        metaText: {
+            fontSize: 12,
+            color: theme.textMuted,
+        },
 
-    description: {
-        fontSize: 12,
-        color: '#666',
-    }
-});
+        description: {
+            fontSize: 12,
+            color: theme.textMuted,
+        }
+    });

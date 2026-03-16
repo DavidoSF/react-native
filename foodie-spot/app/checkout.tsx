@@ -5,12 +5,16 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function CheckoutScreen() {
   const [promoCode, setPromoCode] = useState('');
   const [isConfirmed, setIsConfirmed] = useState(false);
   const orderIdRef = useRef(`demo-${Math.floor(1000 + Math.random() * 9000)}`);
   const restaurantIdRef = useRef('r1');
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const summary = useMemo(() => {
     const subtotal = 23.0;
@@ -23,9 +27,9 @@ export default function CheckoutScreen() {
   if (isConfirmed) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.confirmationCard}>
+          <View style={styles.confirmationCard}>
           <View style={styles.confirmationIcon}>
-            <Ionicons name="checkmark" size={32} color="#fff" />
+            <Ionicons name="checkmark" size={32} color={theme.onBrand} />
           </View>
           <Text style={styles.confirmationTitle}>Commande confirmee</Text>
           <Text style={styles.confirmationSubtitle}>
@@ -87,13 +91,14 @@ export default function CheckoutScreen() {
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Code promo</Text>
           <View style={styles.promoRow}>
-            <TextInput
-              style={styles.promoInput}
-              placeholder="FOODIE10"
-              value={promoCode}
-              onChangeText={setPromoCode}
-              autoCapitalize="characters"
-            />
+              <TextInput
+                style={styles.promoInput}
+                placeholder="FOODIE10"
+                placeholderTextColor={theme.placeholder}
+                value={promoCode}
+                onChangeText={setPromoCode}
+                autoCapitalize="characters"
+              />
             <TouchableOpacity style={styles.promoButton}>
               <Text style={styles.promoButtonText}>Appliquer</Text>
             </TouchableOpacity>
@@ -130,169 +135,179 @@ export default function CheckoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f6f6f6',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    marginTop: 4,
-    color: '#666',
-  },
-  content: {
-    padding: 20,
-    gap: 16,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cardText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  cardSubtext: {
-    fontSize: 13,
-    color: '#666',
-  },
-  linkButton: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-  },
-  linkButtonText: {
-    color: Colors.light.tint,
-    fontWeight: '600',
-  },
-  promoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  promoInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  promoButton: {
-    backgroundColor: Colors.light.tint,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  promoButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  summaryLabel: {
-    color: '#666',
-  },
-  summaryValue: {
-    fontWeight: '600',
-  },
-  summaryTotal: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  summaryTotalLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  summaryTotalValue: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  footer: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  ctaButton: {
-    backgroundColor: Colors.light.tint,
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-  },
-  ctaText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  confirmationCard: {
-    margin: 20,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 24,
-    gap: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  confirmationIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#22c55e',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confirmationTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  confirmationSubtitle: {
-    color: '#666',
-  },
-  confirmationMessage: {
-    textAlign: 'center',
-    color: '#444',
-  },
-  confirmationActions: {
-    width: '100%',
-    gap: 12,
-  },
-  ctaSecondary: {
-    backgroundColor: '#f0f0f0',
-  },
-  ctaSecondaryText: {
-    color: '#333',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});
+const createStyles = (theme: typeof Colors.light) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.surfaceAlt,
+    },
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 8,
+      paddingBottom: 16,
+      backgroundColor: theme.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    subtitle: {
+      marginTop: 4,
+      color: theme.textMuted,
+    },
+    content: {
+      padding: 20,
+      gap: 16,
+    },
+    card: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 16,
+      gap: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    cardText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.text,
+    },
+    cardSubtext: {
+      fontSize: 13,
+      color: theme.textMuted,
+    },
+    linkButton: {
+      alignSelf: 'flex-start',
+      marginTop: 4,
+    },
+    linkButtonText: {
+      color: theme.brand,
+      fontWeight: '600',
+    },
+    promoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    promoInput: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      color: theme.text,
+      backgroundColor: theme.inputBackground,
+    },
+    promoButton: {
+      backgroundColor: theme.brand,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 12,
+    },
+    promoButtonText: {
+      color: theme.onBrand,
+      fontWeight: '600',
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    summaryLabel: {
+      color: theme.textMuted,
+    },
+    summaryValue: {
+      fontWeight: '600',
+      color: theme.text,
+    },
+    summaryTotal: {
+      marginTop: 8,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    summaryTotalLabel: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    summaryTotalValue: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    footer: {
+      padding: 20,
+      backgroundColor: theme.surface,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    ctaButton: {
+      backgroundColor: theme.brand,
+      paddingVertical: 16,
+      borderRadius: 14,
+      alignItems: 'center',
+    },
+    ctaText: {
+      color: theme.onBrand,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    confirmationCard: {
+      margin: 20,
+      backgroundColor: theme.surface,
+      borderRadius: 20,
+      padding: 24,
+      gap: 12,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    confirmationIcon: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: theme.success,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    confirmationTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    confirmationSubtitle: {
+      color: theme.textMuted,
+    },
+    confirmationMessage: {
+      textAlign: 'center',
+      color: theme.textSubtle,
+    },
+    confirmationActions: {
+      width: '100%',
+      gap: 12,
+    },
+    ctaSecondary: {
+      backgroundColor: theme.surfaceMuted,
+    },
+    ctaSecondaryText: {
+      color: theme.text,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+  });

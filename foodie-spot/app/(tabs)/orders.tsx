@@ -2,14 +2,19 @@ import { OrderCard } from "@/components/order-card";
 import { orderAPI } from "@/services/api";
 import { Order, OrderStatus } from "@/types";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function OrdersScreen() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme ?? 'light'];
+    const styles = useMemo(() => createStyles(theme), [theme]);
 
     useEffect(() => {
         loadOrders();
@@ -48,7 +53,7 @@ export default function OrdersScreen() {
             </View>
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false} refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.brand} />
             }>
                 {orders.length === 0 && !loading ? (
                     <View style={styles.emptyState}>
@@ -74,35 +79,38 @@ export default function OrdersScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f0f0f0',
-    },
-    header: {
-        padding: 16,
-        backgroundColor: '#f0f0f0',
-        borderBottomWidth: 1,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-    },
-    content: {
-        flex: 1,
-        padding: 16,
-    },
-    emptyState: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 80,
-    },
-    emptyIcon: {
-        fontSize: 64,
-        marginBottom: 16,
-    },
-    emptyText: {
-        fontSize: 16,
-        color: '#999',
-    }
-});
+const createStyles = (theme: typeof Colors.light) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: theme.surfaceAlt,
+        },
+        header: {
+            padding: 16,
+            backgroundColor: theme.surfaceAlt,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.border,
+        },
+        title: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: theme.text,
+        },
+        content: {
+            flex: 1,
+            padding: 16,
+        },
+        emptyState: {
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingVertical: 80,
+        },
+        emptyIcon: {
+            fontSize: 64,
+            marginBottom: 16,
+        },
+        emptyText: {
+            fontSize: 16,
+            color: theme.textSecondary,
+        }
+    });

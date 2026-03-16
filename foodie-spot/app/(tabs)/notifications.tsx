@@ -1,11 +1,13 @@
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import * as Device from 'expo-device';
 import { useNotifications } from '@/hooks/use-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 type PendingAction =
   | 'init'
@@ -22,6 +24,9 @@ export default function NotificationScreen() {
     const [testResults, setTestResults] = useState<string[]>([]);
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
     const isSimulator = !Device.isDevice;
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme ?? 'light'];
+    const styles = useMemo(() => createStyles(theme), [theme]);
 
     const {
         pushToken,
@@ -156,7 +161,7 @@ export default function NotificationScreen() {
       <LinearGradient colors={['#a855f7', '#ec4899']} style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Ionicons name="arrow-back" size={24} color={theme.onHeader} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Test Notifications</Text>
           <View style={styles.placeholder} />
@@ -166,13 +171,13 @@ export default function NotificationScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {error && (
           <View style={styles.errorBox}>
-            <Ionicons name="alert-circle" size={20} color="#b91c1c" />
+            <Ionicons name="alert-circle" size={20} color={theme.danger} />
             <View style={styles.errorContent}>
               <Text style={styles.errorTitle}>Une erreur est survenue</Text>
               <Text style={styles.errorText}>{error}</Text>
             </View>
             <TouchableOpacity onPress={clearError} style={styles.errorDismiss}>
-              <Ionicons name="close" size={18} color="#b91c1c" />
+              <Ionicons name="close" size={18} color={theme.danger} />
             </TouchableOpacity>
           </View>
         )}
@@ -181,7 +186,7 @@ export default function NotificationScreen() {
         <View style={styles.statusCard}>
           {isLoading && (
             <View style={styles.statusRow}>
-              <ActivityIndicator size="small" color="#3b82f6" />
+              <ActivityIndicator size="small" color={theme.info} />
               <Text style={styles.statusText}>Chargement des données...</Text>
             </View>
           )}
@@ -189,7 +194,7 @@ export default function NotificationScreen() {
             <Ionicons 
               name={isSimulator ? "phone-portrait-outline" : "phone-portrait"} 
               size={20} 
-              color={isSimulator ? "#f59e0b" : "#10b981"} 
+              color={isSimulator ? theme.warning : theme.success} 
             />
             <Text style={styles.statusText}>
               {isSimulator ? 'Simulateur' : 'Appareil physique'}
@@ -199,14 +204,14 @@ export default function NotificationScreen() {
             <Ionicons 
               name={hasPermission ? "checkmark-circle" : "close-circle"} 
               size={20} 
-              color={hasPermission ? "#10b981" : "#ef4444"} 
+              color={hasPermission ? theme.success : theme.danger} 
             />
             <Text style={styles.statusText}>
               Permissions: {hasPermission ? 'Accordées' : 'Non accordées'}
             </Text>
           </View>
           <View style={styles.statusRow}>
-            <Ionicons name="calendar-outline" size={20} color="#6b7280" />
+            <Ionicons name="calendar-outline" size={20} color={theme.textMuted} />
             <Text style={styles.statusText}>
               Notifications programmées: {scheduled.length}
             </Text>
@@ -234,9 +239,9 @@ export default function NotificationScreen() {
             style={[styles.button, styles.buttonPrimary, isBusy && styles.buttonDisabled]}
           >
             {pendingAction === 'init' ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.onBrand} />
             ) : (
-              <Ionicons name="notifications-outline" size={20} color="#fff" />
+              <Ionicons name="notifications-outline" size={20} color={theme.onBrand} />
             )}
             <Text style={styles.buttonText}>
               {pendingAction === 'init' ? 'Initialisation...' : 'Initialiser les notifications'}
@@ -249,9 +254,9 @@ export default function NotificationScreen() {
             style={[styles.button, styles.buttonSecondary, isBusy && styles.buttonDisabled]}
           >
             {pendingAction === 'resetInit' ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.onBrand} />
             ) : (
-              <Ionicons name="refresh" size={20} color="#fff" />
+              <Ionicons name="refresh" size={20} color={theme.onBrand} />
             )}
             <Text style={styles.buttonText}>
               {pendingAction === 'resetInit' ? 'Réinitialisation...' : "Réinitialiser l'initialisation"}
@@ -264,9 +269,9 @@ export default function NotificationScreen() {
             style={[styles.button, styles.buttonSuccess, isBusy && styles.buttonDisabled]}
           >
             {pendingAction === 'send' ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.onBrand} />
             ) : (
-              <Ionicons name="send-outline" size={20} color="#fff" />
+              <Ionicons name="send-outline" size={20} color={theme.onBrand} />
             )}
             <Text style={styles.buttonText}>
               {pendingAction === 'send' ? 'Envoi en cours...' : 'Notification immédiate'}
@@ -279,9 +284,9 @@ export default function NotificationScreen() {
             style={[styles.button, styles.buttonInfo, isBusy && styles.buttonDisabled]}
           >
             {pendingAction === 'schedule5' ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.onBrand} />
             ) : (
-              <Ionicons name="time-outline" size={20} color="#fff" />
+              <Ionicons name="time-outline" size={20} color={theme.onBrand} />
             )}
             <Text style={styles.buttonText}>
               {pendingAction === 'schedule5' ? 'Programmation...' : 'Programmer (5 secondes)'}
@@ -294,9 +299,9 @@ export default function NotificationScreen() {
             style={[styles.button, styles.buttonInfo, isBusy && styles.buttonDisabled]}
           >
             {pendingAction === 'schedule30' ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={theme.onBrand} />
             ) : (
-              <Ionicons name="calendar-outline" size={20} color="#fff" />
+              <Ionicons name="calendar-outline" size={20} color={theme.onBrand} />
             )}
             <Text style={styles.buttonText}>
               {pendingAction === 'schedule30' ? 'Programmation...' : 'Programmer (30 secondes)'}
@@ -310,9 +315,9 @@ export default function NotificationScreen() {
               style={[styles.button, styles.buttonSmall, styles.buttonWarning, isBusy && styles.buttonDisabled]}
             >
               {pendingAction === 'setBadge' ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={theme.onBrand} />
               ) : (
-                <Ionicons name="ellipse" size={16} color="#fff" />
+                <Ionicons name="ellipse" size={16} color={theme.onBrand} />
               )}
               <Text style={styles.buttonTextSmall}>
                 {pendingAction === 'setBadge' ? '...' : 'Badge: 5'}
@@ -325,9 +330,9 @@ export default function NotificationScreen() {
               style={[styles.button, styles.buttonSmall, styles.buttonDanger, isBusy && styles.buttonDisabled]}
             >
               {pendingAction === 'clearBadge' ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={theme.onBrand} />
               ) : (
-                <Ionicons name="close-circle-outline" size={16} color="#fff" />
+                <Ionicons name="close-circle-outline" size={16} color={theme.onBrand} />
               )}
               <Text style={styles.buttonTextSmall}>
                 {pendingAction === 'clearBadge' ? '...' : 'Effacer badge'}
@@ -349,7 +354,7 @@ export default function NotificationScreen() {
           
           {testResults.length === 0 ? (
             <View style={styles.emptyResults}>
-              <Ionicons name="document-text-outline" size={48} color="#9ca3af" />
+              <Ionicons name="document-text-outline" size={48} color={theme.textSecondary} />
               <Text style={styles.emptyText}>Aucun résultat pour le moment</Text>
               <Text style={styles.emptySubtext}>
                 Utilisez les boutons ci-dessus pour tester les notifications
@@ -369,7 +374,7 @@ export default function NotificationScreen() {
         {/* Info Box */}
         {isSimulator && (
           <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color="#3b82f6" />
+            <Ionicons name="information-circle" size={20} color={theme.info} />
             <Text style={styles.infoText}>
               Mode simulateur: Les notifications locales fonctionnent, mais les push tokens Expo nécessitent un appareil physique.
             </Text>
@@ -380,243 +385,244 @@ export default function NotificationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f9fafb',
-    },
-    header: {
-        paddingHorizontal: 24,
-        paddingTop: 16,
-        paddingBottom: 24,
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
-    },
-    headerTop: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#fff',
-    },
-    placeholder: {
-        width: 40,
-    },
-    content: {
-        flex: 1,
-        padding: 24,
-    },
-    statusCard: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    statusRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 12,
-    },
-    statusText: {
-        fontSize: 14,
-        color: '#111827',
-        fontWeight: '500',
-    },
-    tokenContainer: {
-        marginTop: 12,
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#e5e7eb',
-    },
-    tokenLabel: {
-        fontSize: 12,
-        color: '#6b7280',
-        marginBottom: 4,
-    },
-    tokenText: {
-        fontSize: 11,
-        color: '#111827',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    },
-    badgeContainer: {
-        marginTop: 12,
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#e5e7eb',
-    },
-    badgeLabel: {
-        fontSize: 14,
-        color: '#111827',
-        fontWeight: '500',
-    },
-    scheduledContainer: {
-        marginTop: 8,
-    },
-    scheduledLabel: {
-        fontSize: 14,
-        color: '#6b7280',
-    },
-    section: {
-        marginBottom: 24,
-    },
-    errorBox: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        backgroundColor: '#fee2e2',
-        borderRadius: 12,
-        padding: 16,
-        gap: 12,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#fecaca',
-    },
-    errorContent: {
-        flex: 1,
-    },
-    errorTitle: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#991b1b',
-        marginBottom: 4,
-    },
-    errorText: {
-        fontSize: 13,
-        color: '#7f1d1d',
-        lineHeight: 18,
-    },
-    errorDismiss: {
-        padding: 4,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#111827',
-        marginBottom: 16,
-    },
-    button: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 20,
-        borderRadius: 12,
-        marginBottom: 12,
-        gap: 8,
-    },
-    buttonPrimary: {
-        backgroundColor: '#a855f7',
-    },
-    buttonSecondary: {
-        backgroundColor: '#64748b',
-    },
-    buttonSuccess: {
-        backgroundColor: '#10b981',
-    },
-    buttonInfo: {
-        backgroundColor: '#3b82f6',
-    },
-    buttonWarning: {
-        backgroundColor: '#f59e0b',
-    },
-    buttonDanger: {
-        backgroundColor: '#ef4444',
-    },
-    buttonSmall: {
-        flex: 1,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-    },
-    buttonRow: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    buttonDisabled: {
-        opacity: 0.6,
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    buttonTextSmall: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    resultsContainer: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-        maxHeight: 300,
-    },
-    resultItem: {
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
-    },
-    resultText: {
-        fontSize: 12,
-        color: '#111827',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    },
-    emptyResults: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 32,
-        alignItems: 'center',
-    },
-    emptyText: {
-        fontSize: 16,
-        color: '#6b7280',
-        marginTop: 12,
-        fontWeight: '500',
-    },
-    emptySubtext: {
-        fontSize: 14,
-        color: '#9ca3af',
-        marginTop: 4,
-        textAlign: 'center',
-    },
-    clearButton: {
-        color: '#a855f7',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    infoBox: {
-        flexDirection: 'row',
-        backgroundColor: '#dbeafe',
-        borderRadius: 12,
-        padding: 16,
-        gap: 12,
-        marginBottom: 24,
-    },
-    infoText: {
-        flex: 1,
-        fontSize: 14,
-        color: '#1e40af',
-        lineHeight: 20,
-    },
-});
+const createStyles = (theme: typeof Colors.light) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: theme.surfaceAlt,
+        },
+        header: {
+            paddingHorizontal: 24,
+            paddingTop: 16,
+            paddingBottom: 24,
+            borderBottomLeftRadius: 32,
+            borderBottomRightRadius: 32,
+        },
+        headerTop: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        },
+        backButton: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: theme.overlay,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        headerTitle: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: theme.onHeader,
+        },
+        placeholder: {
+            width: 40,
+        },
+        content: {
+            flex: 1,
+            padding: 24,
+        },
+        statusCard: {
+            backgroundColor: theme.surface,
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 24,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 2,
+        },
+        statusRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 12,
+        },
+        statusText: {
+            fontSize: 14,
+            color: theme.text,
+            fontWeight: '500',
+        },
+        tokenContainer: {
+            marginTop: 12,
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: theme.border,
+        },
+        tokenLabel: {
+            fontSize: 12,
+            color: theme.textMuted,
+            marginBottom: 4,
+        },
+        tokenText: {
+            fontSize: 11,
+            color: theme.text,
+            fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+        },
+        badgeContainer: {
+            marginTop: 12,
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: theme.border,
+        },
+        badgeLabel: {
+            fontSize: 14,
+            color: theme.text,
+            fontWeight: '500',
+        },
+        scheduledContainer: {
+            marginTop: 8,
+        },
+        scheduledLabel: {
+            fontSize: 14,
+            color: theme.textMuted,
+        },
+        section: {
+            marginBottom: 24,
+        },
+        errorBox: {
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            backgroundColor: theme.dangerSoft,
+            borderRadius: 12,
+            padding: 16,
+            gap: 12,
+            marginBottom: 16,
+            borderWidth: 1,
+            borderColor: theme.danger,
+        },
+        errorContent: {
+            flex: 1,
+        },
+        errorTitle: {
+            fontSize: 14,
+            fontWeight: '700',
+            color: theme.danger,
+            marginBottom: 4,
+        },
+        errorText: {
+            fontSize: 13,
+            color: theme.danger,
+            lineHeight: 18,
+        },
+        errorDismiss: {
+            padding: 4,
+        },
+        sectionHeader: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 16,
+        },
+        sectionTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: theme.text,
+            marginBottom: 16,
+        },
+        button: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingVertical: 14,
+            paddingHorizontal: 20,
+            borderRadius: 12,
+            marginBottom: 12,
+            gap: 8,
+        },
+        buttonPrimary: {
+            backgroundColor: '#a855f7',
+        },
+        buttonSecondary: {
+            backgroundColor: '#64748b',
+        },
+        buttonSuccess: {
+            backgroundColor: '#10b981',
+        },
+        buttonInfo: {
+            backgroundColor: '#3b82f6',
+        },
+        buttonWarning: {
+            backgroundColor: '#f59e0b',
+        },
+        buttonDanger: {
+            backgroundColor: '#ef4444',
+        },
+        buttonSmall: {
+            flex: 1,
+            paddingVertical: 10,
+            paddingHorizontal: 16,
+        },
+        buttonRow: {
+            flexDirection: 'row',
+            gap: 12,
+        },
+        buttonDisabled: {
+            opacity: 0.6,
+        },
+        buttonText: {
+            color: theme.onBrand,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        buttonTextSmall: {
+            color: theme.onBrand,
+            fontSize: 14,
+            fontWeight: '600',
+        },
+        resultsContainer: {
+            backgroundColor: theme.surface,
+            borderRadius: 12,
+            padding: 16,
+            maxHeight: 300,
+        },
+        resultItem: {
+            paddingVertical: 8,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.borderSubtle,
+        },
+        resultText: {
+            fontSize: 12,
+            color: theme.text,
+            fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+        },
+        emptyResults: {
+            backgroundColor: theme.surface,
+            borderRadius: 12,
+            padding: 32,
+            alignItems: 'center',
+        },
+        emptyText: {
+            fontSize: 16,
+            color: theme.textMuted,
+            marginTop: 12,
+            fontWeight: '500',
+        },
+        emptySubtext: {
+            fontSize: 14,
+            color: theme.textSecondary,
+            marginTop: 4,
+            textAlign: 'center',
+        },
+        clearButton: {
+            color: theme.brand,
+            fontSize: 14,
+            fontWeight: '600',
+        },
+        infoBox: {
+            flexDirection: 'row',
+            backgroundColor: theme.infoSoft,
+            borderRadius: 12,
+            padding: 16,
+            gap: 12,
+            marginBottom: 24,
+        },
+        infoText: {
+            flex: 1,
+            fontSize: 14,
+            color: theme.info,
+            lineHeight: 20,
+        },
+    });

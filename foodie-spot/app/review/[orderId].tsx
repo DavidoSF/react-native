@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import api from '@/services/api';
 import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 type ReviewImage = {
   uri: string;
@@ -27,6 +28,9 @@ export default function ReviewScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const safeRestaurantId = restaurantId || 'r1';
 
@@ -115,7 +119,7 @@ export default function ReviewScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.successCard}>
-          <Ionicons name="checkmark-circle" size={56} color="#22c55e" />
+          <Ionicons name="checkmark-circle" size={56} color={theme.success} />
           <Text style={styles.successTitle}>Merci pour votre avis</Text>
           <Text style={styles.successSubtitle}>Votre retour a ete envoye avec succes.</Text>
           <TouchableOpacity style={styles.ctaButton} onPress={() => router.replace('/(tabs)')}>
@@ -146,7 +150,7 @@ export default function ReviewScreen() {
                 <Ionicons
                   name={value <= rating ? 'star' : 'star-outline'}
                   size={28}
-                  color={value <= rating ? '#f59e0b' : '#d1d5db'}
+                  color={value <= rating ? theme.warning : theme.border}
                 />
               </TouchableOpacity>
             ))}
@@ -159,6 +163,7 @@ export default function ReviewScreen() {
           <TextInput
             style={styles.commentInput}
             placeholder="Partagez votre experience..."
+            placeholderTextColor={theme.placeholder}
             multiline
             value={comment}
             onChangeText={setComment}
@@ -176,7 +181,7 @@ export default function ReviewScreen() {
             ))}
             {images.length < 5 && (
               <TouchableOpacity style={styles.addPhoto} onPress={pickImages}>
-                <Ionicons name="add" size={24} color="#666" />
+                <Ionicons name="add" size={24} color={theme.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -194,116 +199,122 @@ export default function ReviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f6f6f6',
-  },
-  content: {
-    padding: 20,
-    gap: 16,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: '#666',
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  ratingLabel: {
-    color: '#666',
-  },
-  commentInput: {
-    minHeight: 120,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    padding: 12,
-    textAlignVertical: 'top',
-  },
-  photoHint: {
-    color: '#666',
-  },
-  photoRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  photoThumb: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
-  },
-  addPhoto: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaButton: {
-    backgroundColor: Colors.light.tint,
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-  },
-  ctaButtonDisabled: {
-    opacity: 0.6,
-  },
-  ctaText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  errorBox: {
-    backgroundColor: '#fde8e8',
-    borderRadius: 12,
-    padding: 12,
-  },
-  errorText: {
-    color: '#b91c1c',
-    fontSize: 13,
-  },
-  successCard: {
-    margin: 20,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 24,
-    gap: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  successTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  successSubtitle: {
-    color: '#666',
-    textAlign: 'center',
-  },
-});
+const createStyles = (theme: typeof Colors.light) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.surfaceAlt,
+    },
+    content: {
+      padding: 20,
+      gap: 16,
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    subtitle: {
+      color: theme.textMuted,
+    },
+    card: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 16,
+      gap: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    ratingRow: {
+      flexDirection: 'row',
+      gap: 6,
+    },
+    ratingLabel: {
+      color: theme.textMuted,
+    },
+    commentInput: {
+      minHeight: 120,
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+      borderRadius: 12,
+      padding: 12,
+      textAlignVertical: 'top',
+      color: theme.text,
+      backgroundColor: theme.inputBackground,
+    },
+    photoHint: {
+      color: theme.textMuted,
+    },
+    photoRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    photoThumb: {
+      width: 72,
+      height: 72,
+      borderRadius: 12,
+    },
+    addPhoto: {
+      width: 72,
+      height: 72,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.inputBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ctaButton: {
+      backgroundColor: theme.brand,
+      paddingVertical: 16,
+      borderRadius: 14,
+      alignItems: 'center',
+    },
+    ctaButtonDisabled: {
+      opacity: 0.6,
+    },
+    ctaText: {
+      color: theme.onBrand,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    errorBox: {
+      backgroundColor: theme.dangerSoft,
+      borderRadius: 12,
+      padding: 12,
+    },
+    errorText: {
+      color: theme.danger,
+      fontSize: 13,
+    },
+    successCard: {
+      margin: 20,
+      backgroundColor: theme.surface,
+      borderRadius: 20,
+      padding: 24,
+      gap: 12,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    successTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    successSubtitle: {
+      color: theme.textMuted,
+      textAlign: 'center',
+    },
+  });

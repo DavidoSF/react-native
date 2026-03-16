@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { restaurantAPI } from "@/services/api";
 import { Dish } from "@/types";
@@ -7,11 +7,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { ArrowLeft, Minus, Plus } from "lucide-react-native";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function DishScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [dish, setDish] = useState<Dish | null>(null);
     const [quantity, setQuantity] = useState<number>(1);
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme ?? 'light'];
+    const styles = useMemo(() => createStyles(theme), [theme]);
 
     useEffect(() => {
         loadDish();
@@ -38,7 +43,7 @@ export default function DishScreen() {
                 <View style={styles.imageWrapper}>
                     <Image source={{ uri: dish.image }} style={styles.image} />
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <ArrowLeft size={24} color="rgba(0,0,0)" />
+                        <ArrowLeft size={24} color={theme.text} />
                     </TouchableOpacity>
                 </View>
 
@@ -55,11 +60,11 @@ export default function DishScreen() {
                                 style={[styles.qtyButton, quantity === 1 && styles.qtyButtonDisabled]}
                                 onPress={() => setQuantity(Math.max(1, quantity - 1))}
                                 disabled={quantity === 1}>
-                                <Minus size={18} color={quantity === 1 ? '#000' : '#fff'} />
+                                <Minus size={18} color={quantity === 1 ? theme.text : theme.onBrand} />
                             </ TouchableOpacity>
                             <Text style={styles.qtyValue}>{quantity}</Text>
                             <TouchableOpacity style={styles.qtyButton} onPress={() => setQuantity(quantity + 1)}>
-                                <Plus size={18} color="#fff" />
+                                <Plus size={18} color={theme.onBrand} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -74,92 +79,94 @@ export default function DishScreen() {
 
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        marginTop: -100,
-        backgroundColor: '#fff',
-    },
-    loading: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    imageWrapper: {
-        position: 'relative',
-    },
-    image: {
-        width: '100%',
-        height: 280,
-    },
-    backButton: {
-        position: 'absolute',
-        top: 16,
-        left: 16,
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: 'rgba(255,255,255)',
-        padding: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    content: {
-        padding: 16,
-        gap: 12
-    },
-    name: {
-        fontSize: 22,
-        fontWeight: 'bold',
-    },
-    description: {
-        color: '#666',
-        lineHeight: 20,
-    },
-    price: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#FF6B35',
-    },
-    quantity: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        // gap: 12,
-        justifyContent: 'space-between',
-    },
-    qtyControls: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    qtyButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#FF6B35',
-    },
-    qtyButtonDisabled: {
-        borderColor: '#f0f0f0',
-        backgroundColor: '#ccc',
-    },
-    qtyValue: {
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    addButton: {
-        backgroundColor: '#FF6B35',
-        borderRadius: 12,
-        padding: 16,
-        alignItems: 'center',
-        marginTop: 8,
-    },
-    addButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '700',
-    }
-});
+const createStyles = (theme: typeof Colors.light) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            marginTop: -100,
+            backgroundColor: theme.background,
+        },
+        loading: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        imageWrapper: {
+            position: 'relative',
+        },
+        image: {
+            width: '100%',
+            height: 280,
+        },
+        backButton: {
+            position: 'absolute',
+            top: 16,
+            left: 16,
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: theme.surface,
+            padding: 8,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        content: {
+            padding: 16,
+            gap: 12
+        },
+        name: {
+            fontSize: 22,
+            fontWeight: 'bold',
+            color: theme.text,
+        },
+        description: {
+            color: theme.textMuted,
+            lineHeight: 20,
+        },
+        price: {
+            fontSize: 18,
+            fontWeight: '700',
+            color: theme.brand,
+        },
+        quantity: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        },
+        qtyControls: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+        },
+        qtyButton: {
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: theme.border,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.brand,
+        },
+        qtyButtonDisabled: {
+            borderColor: theme.borderSubtle,
+            backgroundColor: theme.surfaceMuted,
+        },
+        qtyValue: {
+            fontSize: 16,
+            fontWeight: '700',
+            color: theme.text,
+        },
+        addButton: {
+            backgroundColor: theme.brand,
+            borderRadius: 12,
+            padding: 16,
+            alignItems: 'center',
+            marginTop: 8,
+        },
+        addButtonText: {
+            color: theme.onBrand,
+            fontSize: 16,
+            fontWeight: '700',
+        }
+    });

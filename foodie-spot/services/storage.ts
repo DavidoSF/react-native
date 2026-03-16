@@ -61,4 +61,5 @@ export const STORAGE_KEYS = {
     RECENT_SEARCHES: 'recentSearches',
     CACHED_RESTAURANTS: 'cachedRestaurants',
     OFFLINE_ORDERS: 'offlineOrders',
+    THEME_PREFERENCE: 'themePreference',
 };

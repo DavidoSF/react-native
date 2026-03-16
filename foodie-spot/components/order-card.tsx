@@ -1,6 +1,9 @@
 import { Order } from "@/types";
 import { Bike, Check, CheckCircle, ChefHat, Clock, Navigation, Package, X } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useMemo } from "react";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface Props {
     order: Order;
@@ -32,6 +35,10 @@ const statusIcon: Record<Order['status'], React.ReactNode> = {
 
 
 export const OrderCard: React.FC<Props> = ({ order, onPress }) => {
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme ?? 'light'];
+    const styles = useMemo(() => createStyles(theme), [theme]);
+
     return (
         <TouchableOpacity style={styles.card} onPress={onPress} disabled={!onPress}>
                 <View style={styles.header}>
@@ -52,58 +59,60 @@ export const OrderCard: React.FC<Props> = ({ order, onPress }) => {
 }
 
 
-const styles = StyleSheet.create({
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.4,
-        shadowRadius: 6,
-        elevation: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    restaurant: {
-        fontSize: 16,
-        fontWeight: '700', 
-        flex : 1,
-    },
-    status: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 12,
-    },
-    statusText: {
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    items: {
-        color: '#666',
-        marginBottom: 10,
-    },
-    footer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    total: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#FF6B35',
-    },
-    date: {
-        fontSize: 12,
-        color: '#999',
-    }
-});
+const createStyles = (theme: typeof Colors.light) =>
+    StyleSheet.create({
+        card: {
+            backgroundColor: theme.surface,
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 12,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.4,
+            shadowRadius: 6,
+            elevation: 1,
+        },
+        header: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+        },
+        restaurant: {
+            fontSize: 16,
+            fontWeight: '700', 
+            flex : 1,
+            color: theme.text,
+        },
+        status: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 12,
+        },
+        statusText: {
+            color: theme.onBrand,
+            fontSize: 12,
+            fontWeight: '600',
+        },
+        items: {
+            color: theme.textMuted,
+            marginBottom: 10,
+        },
+        footer: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        total: {
+            fontSize: 16,
+            fontWeight: '700',
+            color: theme.brand,
+        },
+        date: {
+            fontSize: 12,
+            color: theme.textSecondary,
+        }
+    });
