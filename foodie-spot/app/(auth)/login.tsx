@@ -19,7 +19,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
   const MIN_PASSWORD_LENGTH = 8;
-  const EMAIL_REGEX = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/;
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   const handleLogin = async () => {
     const trimmedEmail = email.trim();

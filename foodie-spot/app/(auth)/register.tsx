@@ -29,7 +29,7 @@ export default function RegisterScreen() {
     confirmPassword?: string;
   }>({});
   const MIN_PASSWORD_LENGTH = 8;
-  const EMAIL_REGEX = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/;
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   const handleRegister = async () => {
     const errors: typeof fieldErrors = {};

@@ -52,13 +52,12 @@ export function ThemePreferenceProvider({ children }: { children: React.ReactNod
     });
   }, []);
 
+  const colorScheme = preference === 'system' ? systemScheme : preference;
   const toggleDarkMode = useCallback(() => {
     const next = colorScheme === 'dark' ? 'light' : 'dark';
     setPreferenceState(next);
     storage.setItem(STORAGE_KEYS.THEME_PREFERENCE, { value: next }).catch(() => {});
   }, [colorScheme]);
-
-  const colorScheme = preference === 'system' ? systemScheme : preference;
 
   const value = useMemo<ThemeContextValue>(
     () => ({
