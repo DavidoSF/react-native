@@ -8,6 +8,7 @@ import { storage, STORAGE_KEYS } from "@/services/storage";
 import { Restaurant, SearchFilters } from "@/types";
 import { Filter, Search } from "lucide-react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useI18n } from "@/contexts/i18n-context";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,6 +25,7 @@ export default function SearchScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const styles = useMemo(() => createStyles(theme), [theme]);
+    const { t } = useI18n();
 
     useEffect(() => {
         loadRestaurants();
@@ -45,7 +47,7 @@ export default function SearchScreen() {
             ...allRestaurants.map(restaurant => restaurant.cuisine),
         ];
         const uniqueSuggestions = Array.from(
-            new Set(suggestionPool.map(item => item.trim()).filter(Boolean))
+            new Set(suggestionPool.filter(item => typeof item === 'string' && item.trim() !== '').map(item => item.trim()))
         );
         return uniqueSuggestions
             .filter(item => item.toLowerCase().includes(normalizedQuery))
@@ -115,7 +117,7 @@ export default function SearchScreen() {
                     <Search size={24} color={theme.text} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Rechercher un restaurant"
+                        placeholder={t.search.placeholder}
                         placeholderTextColor={theme.placeholder}
                         value={query}
                         onChangeText={setQuery}
@@ -146,7 +148,7 @@ export default function SearchScreen() {
             <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
                 {isQueryEmpty && recentSearches.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Recherches récentes</Text>
+                        <Text style={styles.sectionTitle}>{t.search.recentSearches}</Text>
                         <View style={styles.chipRow}>
                             {recentSearches.map((term) => (
                                 <TouchableOpacity key={term} style={styles.chip} onPress={() => handleSuggestionPress(term)}>
@@ -159,7 +161,7 @@ export default function SearchScreen() {
 
                 {!isQueryEmpty && suggestions.length > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Suggestions</Text>
+                        <Text style={styles.sectionTitle}>{t.search.suggestions}</Text>
                         {suggestions.map((term) => (
                             <TouchableOpacity key={term} style={styles.suggestionRow} onPress={() => handleSuggestionPress(term)}>
                                 <Search size={18} color={theme.icon} />
@@ -170,8 +172,7 @@ export default function SearchScreen() {
                 )}
 
                 <Text style={styles.resultsText}>
-
-                    {restaurants.length} {restaurants.length > 1 ? 'restaurants' : 'restaurant'} trouvés
+                    {restaurants.length} {restaurants.length > 1 ? t.search.resultsMany : t.search.resultsOne}
                 </Text>
                 {restaurants.map((restaurant) => (
                     <RestaurantCard

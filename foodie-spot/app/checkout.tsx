@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -6,30 +6,37 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { promoAPI } from '@/services/api';
+import { orderAPI, promoAPI } from '@/services/api';
+import { useCart } from '@/contexts/cart-context';
 
 export default function CheckoutScreen() {
+  const { items, subtotal, deliveryFee: cartDeliveryFee, clearCart } = useCart();
   const [promoCode, setPromoCode] = useState('');
   const [promoStatus, setPromoStatus] = useState<'idle' | 'loading' | 'valid' | 'error'>('idle');
   const [promoMessage, setPromoMessage] = useState<string | null>(null);
   const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoType, setPromoType] = useState<'percent' | 'delivery' | null>(null);
   const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
-  const [isConfirmed, setIsConfirmed] = useState(false);
-  const orderIdRef = useRef(`demo-${Math.floor(1000 + Math.random() * 9000)}`);
-  const restaurantIdRef = useRef('r1');
+  const [promoBanners, setPromoBanners] = useState<{ code: string; description: string; minOrder: number }[]>([]);
+  const [isPlacing, setIsPlacing] = useState(false);
+  const [placeError, setPlaceError] = useState<string | null>(null);
+  const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
+  const restaurantId = items[0]?.dish.restaurantId ?? 'r1';
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const baseDeliveryFee = 2.5;
-  const subtotal = 23.0;
   const isApplyDisabled = promoStatus === 'loading' || !promoCode.trim();
 
+  useEffect(() => {
+    promoAPI.getBanners().then(setPromoBanners);
+  }, []);
+
   const summary = useMemo(() => {
-    const deliveryFee = baseDeliveryFee;
-    const discount = promoStatus === 'valid' ? promoDiscount : 0;
+    const deliveryFee = promoType === 'delivery' && promoStatus === 'valid' ? 0 : cartDeliveryFee;
+    const discount = promoStatus === 'valid' && promoType !== 'delivery' ? promoDiscount : 0;
     const total = Math.max(0, subtotal + deliveryFee - discount);
     return { subtotal, deliveryFee, discount, total };
-  }, [baseDeliveryFee, promoDiscount, promoStatus, subtotal]);
+  }, [cartDeliveryFee, promoDiscount, promoStatus, promoType, subtotal]);
 
   const handlePromoChange = (value: string) => {
     setPromoCode(value);
@@ -37,6 +44,7 @@ export default function CheckoutScreen() {
       setPromoStatus('idle');
       setPromoMessage(null);
       setPromoDiscount(0);
+      setPromoType(null);
       setAppliedPromoCode(null);
     }
   };
@@ -47,6 +55,7 @@ export default function CheckoutScreen() {
       setPromoStatus('error');
       setPromoMessage('Code promo requis');
       setPromoDiscount(0);
+      setPromoType(null);
       setAppliedPromoCode(null);
       return;
     }
@@ -55,18 +64,19 @@ export default function CheckoutScreen() {
     setPromoMessage(null);
 
     try {
-      const response = await promoAPI.validate({ code, subtotal, restaurantId: restaurantIdRef.current });
+      const response = await promoAPI.validate({ code, subtotal, restaurantId });
       const data = response?.data ?? response;
       const normalizedCode = (data?.code || code).toUpperCase();
       let discountAmount = 0;
 
       if (data?.type === 'delivery') {
-        discountAmount = baseDeliveryFee;
+        discountAmount = cartDeliveryFee;
       } else {
         discountAmount = Number(data?.discount ?? 0);
       }
 
       setPromoDiscount(discountAmount);
+      setPromoType(data?.type ?? null);
       setPromoStatus('valid');
       setAppliedPromoCode(normalizedCode);
       setPromoMessage(data?.message || 'Code promo appliqué');
@@ -75,11 +85,12 @@ export default function CheckoutScreen() {
       setPromoStatus('error');
       setPromoMessage(message);
       setPromoDiscount(0);
+      setPromoType(null);
       setAppliedPromoCode(null);
     }
   };
 
-  if (isConfirmed) {
+  if (confirmedOrderId) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
           <View style={styles.confirmationCard}>
@@ -88,7 +99,7 @@ export default function CheckoutScreen() {
           </View>
           <Text style={styles.confirmationTitle}>Commande confirmee</Text>
           <Text style={styles.confirmationSubtitle}>
-            Numero {orderIdRef.current}
+            Numero {confirmedOrderId}
           </Text>
           <Text style={styles.confirmationMessage}>
             Votre commande est en preparation. Nous vous notifierons quand elle partira.
@@ -103,13 +114,9 @@ export default function CheckoutScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.ctaButton}
-              onPress={() =>
-                router.push(
-                  `/review/${orderIdRef.current}?restaurantId=${restaurantIdRef.current}`
-                )
-              }
+              onPress={() => router.replace(`/tracking/${confirmedOrderId}`)}
             >
-              <Text style={styles.ctaText}>Laisser un avis</Text>
+              <Text style={styles.ctaText}>Suivre ma commande</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -145,6 +152,20 @@ export default function CheckoutScreen() {
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Code promo</Text>
+          {promoBanners.length > 0 && (
+            <View style={styles.bannerList}>
+              {promoBanners.map((b) => (
+                <TouchableOpacity
+                  key={b.code}
+                  style={styles.bannerChip}
+                  onPress={() => handlePromoChange(b.code)}
+                >
+                  <Text style={styles.bannerChipCode}>{b.code}</Text>
+                  <Text style={styles.bannerChipDesc}>{b.description}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           <View style={styles.promoRow}>
               <TextInput
                 style={styles.promoInput}
@@ -185,26 +206,62 @@ export default function CheckoutScreen() {
           <Text style={styles.sectionTitle}>Resume</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Sous-total</Text>
-            <Text style={styles.summaryValue}>${summary.subtotal.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>{summary.subtotal.toFixed(2)} €</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Livraison</Text>
-            <Text style={styles.summaryValue}>${summary.deliveryFee.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>{summary.deliveryFee.toFixed(2)} €</Text>
           </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Promo</Text>
-            <Text style={styles.summaryValue}>-${summary.discount.toFixed(2)}</Text>
-          </View>
+          {summary.discount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: theme.success }]}>Promo {appliedPromoCode}</Text>
+              <Text style={[styles.summaryValue, { color: theme.success }]}>-{summary.discount.toFixed(2)} €</Text>
+            </View>
+          )}
+          {promoType === 'delivery' && promoStatus === 'valid' && (
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: theme.success }]}>Livraison gratuite</Text>
+              <Text style={[styles.summaryValue, { color: theme.success }]}>-{cartDeliveryFee.toFixed(2)} €</Text>
+            </View>
+          )}
           <View style={[styles.summaryRow, styles.summaryTotal]}>
             <Text style={styles.summaryTotalLabel}>Total</Text>
-            <Text style={styles.summaryTotalValue}>${summary.total.toFixed(2)}</Text>
+            <Text style={styles.summaryTotalValue}>{summary.total.toFixed(2)} €</Text>
           </View>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.ctaButton} onPress={() => setIsConfirmed(true)}>
-          <Text style={styles.ctaText}>Confirmer la commande</Text>
+        {!!placeError && (
+          <Text style={{ color: theme.danger, marginBottom: 8, textAlign: 'center', fontSize: 13 }}>{placeError}</Text>
+        )}
+        <TouchableOpacity
+          style={[styles.ctaButton, (isPlacing || items.length === 0) && styles.ctaButtonDisabled]}
+          disabled={isPlacing || items.length === 0}
+          onPress={async () => {
+            setIsPlacing(true);
+            setPlaceError(null);
+            try {
+              const orderItems = items.map(i => ({ menuItemId: i.dish.id, quantity: i.quantity }));
+              const order = await orderAPI.createOrder({
+                restaurantId,
+                items: orderItems,
+                deliveryAddress: '12 Rue des Fleurs, Paris',
+                paymentMethod: 'card',
+                promoCode: appliedPromoCode,
+              });
+              clearCart();
+              setConfirmedOrderId(order.id);
+            } catch (err: any) {
+              setPlaceError(err?.response?.data?.message || 'Impossible de passer la commande.');
+            } finally {
+              setIsPlacing(false);
+            }
+          }}
+        >
+          {isPlacing
+            ? <ActivityIndicator size="small" color={theme.onBrand} />
+            : <Text style={styles.ctaText}>Confirmer la commande</Text>}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -286,6 +343,31 @@ const createStyles = (theme: typeof Colors.light) =>
       color: theme.text,
       backgroundColor: theme.inputBackground,
     },
+    bannerList: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 4,
+    },
+    bannerChip: {
+      borderWidth: 1,
+      borderColor: theme.brand,
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    bannerChipCode: {
+      fontWeight: '700',
+      color: theme.brand,
+      fontSize: 12,
+    },
+    bannerChipDesc: {
+      color: theme.textMuted,
+      fontSize: 12,
+    },
     promoButton: {
       backgroundColor: theme.brand,
       paddingHorizontal: 14,
@@ -351,6 +433,9 @@ const createStyles = (theme: typeof Colors.light) =>
       paddingVertical: 16,
       borderRadius: 14,
       alignItems: 'center',
+    },
+    ctaButtonDisabled: {
+      opacity: 0.5,
     },
     ctaText: {
       color: theme.onBrand,

@@ -1,5 +1,5 @@
 import { Order } from "@/types";
-import { Bike, Check, CheckCircle, ChefHat, Clock, Navigation, Package, X } from "lucide-react-native";
+import { Bike, Check, CheckCircle, ChefHat, Clock, Navigation, Package, Star, X } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useMemo } from "react";
 import { Colors } from "@/constants/theme";
@@ -8,6 +8,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 interface Props {
     order: Order;
     onPress?: () => void;
+    onReview?: () => void;
 }
 
 const statusColor: Record<Order['status'],string> = {
@@ -34,7 +35,7 @@ const statusIcon: Record<Order['status'], React.ReactNode> = {
 };
 
 
-export const OrderCard: React.FC<Props> = ({ order, onPress }) => {
+export const OrderCard: React.FC<Props> = ({ order, onPress, onReview }) => {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const styles = useMemo(() => createStyles(theme), [theme]);
@@ -49,11 +50,17 @@ export const OrderCard: React.FC<Props> = ({ order, onPress }) => {
                         </View>
                 </View>
 
-                <Text style={styles.items} numberOfLines={1}>{order.items.map(item => item.dish.name).join(', ')}</Text>
+                <Text style={styles.items} numberOfLines={1}>{order.items.map(item => (item as any).menuItem?.name ?? item.dish?.name ?? 'Article').join(', ')}</Text>
                 <View style={styles.footer}>
                     <Text style={styles.total}>Total: {order.total} €</Text>
                     <Text style= {styles.date}>{new Date(order.createdAt).toLocaleDateString()}</Text>
                 </View>
+                {order.status === 'delivered' && onReview ? (
+                    <TouchableOpacity style={styles.reviewButton} onPress={onReview}>
+                        <Star size={14} color={theme.onBrand} />
+                        <Text style={styles.reviewButtonText}>Laisser un avis</Text>
+                    </TouchableOpacity>
+                ) : null}
         </TouchableOpacity>
     );
 }
@@ -114,5 +121,20 @@ const createStyles = (theme: typeof Colors.light) =>
         date: {
             fontSize: 12,
             color: theme.textSecondary,
-        }
+        },
+        reviewButton: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            marginTop: 12,
+            paddingVertical: 8,
+            borderRadius: 10,
+            backgroundColor: theme.brand,
+        },
+        reviewButtonText: {
+            fontSize: 13,
+            fontWeight: '600',
+            color: theme.onBrand,
+        },
     });

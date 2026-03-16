@@ -1,0 +1,19 @@
+[
+  {
+    "id": "dbbd0671-7877-4438-bfda-4bb0e7a61861",
+    "userId": "00d8d31d-328d-4ec6-9f68-6c866cbb9a15",
+    "userName": "david Demo",
+    "userAvatar": "",
+    "restaurantId": "r1",
+    "orderId": "2f75ebf5-daa5-4f78-92d3-94c19b815814",
+    "rating": 3,
+    "qualityRating": null,
+    "speedRating": null,
+    "presentationRating": null,
+    "comment": "Testing",
+    "images": [],
+    "likes": 0,
+    "isVerifiedPurchase": true,
+    "createdAt": "2026-03-16T20:54:59.721Z"
+  }
+]

@@ -113,7 +113,13 @@ export const notifications = {
         await Notifications.setNotificationChannelAsync('reminders', {
             name: 'Rappels de voyage',
             importance: Notifications.AndroidImportance.HIGH
-        }); 
+        });
+        await Notifications.setNotificationChannelAsync('order_tracking', {
+            name: 'Suivi de commande',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 100, 100, 100],
+            lightColor: '#a855f7',
+        });
     },
     async getToken(): Promise<PushToken | null> {
         const stored = await AsyncStorage.getItem(KEYS.PUSH_TOKEN);
@@ -127,6 +133,26 @@ export const notifications = {
             content: { title, body, data: data || {}, sound: 'default'},
             trigger: null,
         })
+    },
+
+    async sendOrderStatus(
+        orderId: string,
+        statusLabel: string,
+        message: string,
+    ): Promise<void> {
+        try {
+            await Notifications.scheduleNotificationAsync({
+                content: {
+                    title: `🛒 ${statusLabel}`,
+                    body: message,
+                    data: { orderId, type: 'order_tracking' },
+                    sound: 'default',
+                },
+                trigger: null,
+            });
+        } catch {
+            // silently ignore if notifications not permitted
+        }
     },
     async schedule(title: string, body: string, date: Date, data?: Record<string, any>): Promise<string> {
          return Notifications.scheduleNotificationAsync({

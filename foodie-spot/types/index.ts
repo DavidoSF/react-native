@@ -28,7 +28,7 @@ export interface SearchFilters {
 }
 export interface Dish {
     id: string;
-    resurantId: string;
+    restaurantId: string;
     name: string;
     description: string;
     price: number;

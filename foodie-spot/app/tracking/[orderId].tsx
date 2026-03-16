@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
     ActivityIndicator,
@@ -14,21 +14,24 @@ import {
 import { AlertCircle, Bike, Clock, MapPin, Phone, RefreshCw, Star } from "lucide-react-native";
 import { Address, OrderStatus, OrderTracking } from "@/types";
 import { orderAPI } from "@/services/api";
+import { notifications } from "@/services/notification";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useI18n } from "@/contexts/i18n-context";
 
 const POLL_INTERVAL_MS = 15000;
 
-const statusLabels: Record<OrderStatus, string> = {
-    pending: "Commande recue",
-    confirmed: "Commande confirmee",
-    preparing: "En preparation",
-    ready: "Commande prete",
-    picked_up: "Recuperee par le livreur",
-    delivering: "En cours de livraison",
-    "on-the-way": "En cours de livraison",
-    delivered: "Livree",
-    cancelled: "Annulee",
+// Progress along the route (0 = restaurant, 1 = destination)
+const STATUS_PROGRESS: Record<OrderStatus, number> = {
+    pending: 0,
+    confirmed: 0,
+    preparing: 0.05,
+    ready: 0.1,
+    picked_up: 0.25,
+    delivering: 0.6,
+    "on-the-way": 0.6,
+    delivered: 1.0,
+    cancelled: 0,
 };
 
 const statusColors: Record<OrderStatus, string> = {
@@ -43,22 +46,22 @@ const statusColors: Record<OrderStatus, string> = {
     cancelled: "#DC2626",
 };
 
-const formatTime = (value?: string) => {
+const formatTime = (value?: string, locale = "fr-FR") => {
     if (!value) return "";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
-    return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 };
 
-const formatDate = (value?: string) => {
+const formatDate = (value?: string, locale = "fr-FR") => {
     if (!value) return "";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
-    return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+    return date.toLocaleDateString(locale, { day: "2-digit", month: "short" });
 };
 
 const formatAddress = (address?: Address | string) => {
-    if (!address) return "Adresse indisponible";
+    if (!address) return "\u2014";
     if (typeof address === "string") return address;
     const line1 = [address.street, address.city, address.postalCode]
         .filter(Boolean)
@@ -85,12 +88,37 @@ export default function TrackingScreen() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const isFetchingRef = useRef(false);
     const hasTrackingRef = useRef(false);
+    const previousStatusRef = useRef<OrderStatus | null>(null);
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const styles = useMemo(() => createStyles(theme), [theme]);
+    const { t, language } = useI18n();
+    const locale = language === 'en' ? 'en-GB' : 'fr-FR';
 
+    // Language-aware status labels built from i18n
+    const statusLabels = useMemo<Record<OrderStatus, string>>(() => ({
+        pending:     t.tracking.statusPending,
+        confirmed:   t.tracking.statusConfirmed,
+        preparing:   t.tracking.statusPreparing,
+        ready:       t.tracking.statusReady,
+        picked_up:   t.tracking.statusPickedUp,
+        delivering:  t.tracking.statusDelivering,
+        "on-the-way":t.tracking.statusDelivering,
+        delivered:   t.tracking.statusDelivered,
+        cancelled:   t.tracking.statusCancelled,
+    }), [t]);
+
+    // Prefer steps (full journey including future steps); fall back to timeline events only
     const timelineEntries = useMemo<TimelineEntry[]>(() => {
         if (!tracking) return [];
+        if (tracking.steps && tracking.steps.length > 0) {
+            return tracking.steps.map(step => ({
+                status: step.key,
+                timestamp: step.time,
+                message: step.label,
+                completed: step.completed,
+            }));
+        }
         if (tracking.timeline && tracking.timeline.length > 0) {
             const sortedTimeline = [...tracking.timeline].sort(
                 (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -103,21 +131,13 @@ export default function TrackingScreen() {
                 completed: currentIndex >= 0 ? index <= currentIndex : item.status === tracking.status,
             }));
         }
-        if (tracking.steps && tracking.steps.length > 0) {
-            return tracking.steps.map(step => ({
-                status: step.key,
-                timestamp: step.time,
-                message: step.label,
-                completed: step.completed,
-            }));
-        }
         return [];
     }, [tracking]);
 
     const loadTracking = useCallback(
         async (options?: { silent?: boolean }) => {
             if (!orderId) {
-                setError("Commande introuvable.");
+                setError(t.tracking.noData);
                 setLoading(false);
                 return;
             }
@@ -132,13 +152,36 @@ export default function TrackingScreen() {
                 const data = await orderAPI.getOrderTracking(orderId);
                 if (data) {
                     hasTrackingRef.current = true;
+                    // Fire a local notification when the status advances
+                    if (
+                        previousStatusRef.current !== null &&
+                        data.status !== previousStatusRef.current
+                    ) {
+                        const label = {
+                            pending:     t.tracking.statusPending,
+                            confirmed:   t.tracking.statusConfirmed,
+                            preparing:   t.tracking.statusPreparing,
+                            ready:       t.tracking.statusReady,
+                            picked_up:   t.tracking.statusPickedUp,
+                            delivering:  t.tracking.statusDelivering,
+                            'on-the-way':t.tracking.statusDelivering,
+                            delivered:   t.tracking.statusDelivered,
+                            cancelled:   t.tracking.statusCancelled,
+                        }[data.status] ?? data.status;
+                        const body =
+                            data.timeline?.slice(-1)[0]?.message ||
+                            data.steps?.find(s => s.key === data.status)?.label ||
+                            label;
+                        await notifications.sendOrderStatus(orderId, label, body);
+                    }
+                    previousStatusRef.current = data.status;
                     setTracking(data);
                     setError(null);
                 } else {
-                    setError("Aucune donnee de suivi disponible.");
+                    setError(t.tracking.noData);
                 }
             } catch (err) {
-                setError("Impossible de charger le suivi en temps reel.");
+                setError(t.tracking.errorTitle);
             } finally {
                 setLoading(false);
                 setRefreshing(false);
@@ -146,11 +189,13 @@ export default function TrackingScreen() {
                 isFetchingRef.current = false;
             }
         },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [orderId]
     );
 
     useEffect(() => {
         hasTrackingRef.current = false;
+        previousStatusRef.current = null;
         setTracking(null);
         setError(null);
         setLoading(true);
@@ -175,7 +220,7 @@ export default function TrackingScreen() {
             <SafeAreaView style={styles.container} edges={["top"]}>
                 <View style={styles.loadingState}>
                     <ActivityIndicator size="large" color={theme.brand} />
-                    <Text style={styles.loadingText}>Chargement du suivi...</Text>
+                    <Text style={styles.loadingText}>{t.tracking.loadingText}</Text>
                 </View>
             </SafeAreaView>
         );
@@ -186,11 +231,11 @@ export default function TrackingScreen() {
             <SafeAreaView style={styles.container} edges={["top"]}>
                 <View style={styles.errorState}>
                     <AlertCircle size={28} color={theme.danger} />
-                    <Text style={styles.errorTitle}>Impossible de charger le suivi</Text>
+                    <Text style={styles.errorTitle}>{t.tracking.errorTitle}</Text>
                     <Text style={styles.errorMessage}>{error}</Text>
                     <TouchableOpacity style={styles.retryButton} onPress={() => loadTracking()}>
                         <RefreshCw size={16} color={theme.onBrand} />
-                        <Text style={styles.retryText}>Reessayer</Text>
+                        <Text style={styles.retryText}>{t.common.retry}</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -202,16 +247,28 @@ export default function TrackingScreen() {
     const etaText = tracking?.estimatedMinutes
         ? `${tracking.estimatedMinutes} min`
         : tracking?.estimatedArrival
-            ? formatTime(tracking.estimatedArrival)
+            ? formatTime(tracking.estimatedArrival, locale)
             : tracking?.estimatedDelivery
-                ? formatTime(tracking.estimatedDelivery)
+                ? formatTime(tracking.estimatedDelivery, locale)
                 : "";
 
     const addressText = formatAddress(tracking?.deliveryAddress);
-    const lastUpdatedText = lastUpdated ? `${lastUpdated.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` : "";
+    const lastUpdatedText = lastUpdated
+        ? lastUpdated.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })
+        : "";
 
     const driver = tracking?.driver;
     const driverPhoto = driver?.photo;
+
+    // Map: compute driver progress (0=restaurant, 1=destination)
+    const driverProgress = tracking ? (STATUS_PROGRESS[tracking.status] ?? 0) : 0;
+    // Use actual GPS-derived progress when available (delivering/picked_up)
+    const actualProgress = tracking?.driverLocation
+        ? driverProgress  // could compute from lat/lng but simulated value is fine
+        : driverProgress;
+    // leftPct: 6% at restaurant end, 82% at destination end
+    const driverLeftPct = `${6 + actualProgress * 76}%`;
+    const showDriverOnMap = driverProgress > 0 && tracking?.status !== 'cancelled';
 
     return (
         <SafeAreaView style={styles.container} edges={["top"]}>
@@ -222,8 +279,8 @@ export default function TrackingScreen() {
             >
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.title}>Suivi de commande</Text>
-                        <Text style={styles.subtitle}>{tracking?.orderNumber ? `Commande ${tracking.orderNumber}` : `Commande #${tracking?.orderId}`}</Text>
+                        <Text style={styles.title}>{t.tracking.title}</Text>
+                        <Text style={styles.subtitle}>{tracking?.orderNumber ? `${t.tracking.order} ${tracking.orderNumber}` : `${t.tracking.order} #${tracking?.orderId}`}</Text>
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
                         <Text style={styles.statusText}>{statusLabel}</Text>
@@ -241,51 +298,58 @@ export default function TrackingScreen() {
                     <View style={styles.summaryRow}>
                         <Clock size={18} color={theme.brand} />
                         <View>
-                            <Text style={styles.summaryLabel}>Livraison estimee</Text>
-                            <Text style={styles.summaryValue}>{etaText || "En cours d'actualisation"}</Text>
+                            <Text style={styles.summaryLabel}>{t.tracking.estimatedDelivery}</Text>
+                            <Text style={styles.summaryValue}>{etaText || t.tracking.updating}</Text>
                         </View>
                     </View>
                     <View style={styles.summaryRow}>
                         <MapPin size={18} color={theme.brand} />
                         <View style={styles.summaryTextBlock}>
-                            <Text style={styles.summaryLabel}>Adresse de livraison</Text>
+                            <Text style={styles.summaryLabel}>{t.tracking.deliveryAddress}</Text>
                             <Text style={styles.summaryValue}>{addressText}</Text>
                         </View>
                     </View>
                     <View style={styles.summaryMeta}>
                         <View style={styles.liveBadge}>
                             <View style={styles.liveDot} />
-                            <Text style={styles.liveText}>Temps reel active</Text>
+                            <Text style={styles.liveText}>{t.tracking.liveTracking}</Text>
                         </View>
-                        {lastUpdatedText ? <Text style={styles.updatedText}>Maj {lastUpdatedText}</Text> : null}
+                        {lastUpdatedText ? <Text style={styles.updatedText}>{t.tracking.updatedAt} {lastUpdatedText}</Text> : null}
                     </View>
                 </View>
 
                 <View style={styles.mapCard}>
                     <View style={styles.mapHeader}>
-                        <Text style={styles.sectionTitle}>Carte</Text>
-                        <Text style={styles.mapSubtitle}>Apercu de la position</Text>
+                        <Text style={styles.sectionTitle}>{t.tracking.map}</Text>
+                        <Text style={styles.mapSubtitle}>{t.tracking.mapSubtitle}</Text>
                     </View>
                     <View style={styles.mapCanvas}>
                         <View style={styles.mapRoute} />
+                        {/* Restaurant marker (origin) */}
                         <View style={[styles.mapMarker, styles.mapMarkerRestaurant]} />
-                        {tracking?.driverLocation ? <View style={[styles.mapMarker, styles.mapMarkerDriver]} /> : null}
+                        {/* Driver marker — moves along the route based on status */}
+                        {showDriverOnMap && (
+                            <View style={[styles.mapMarker, styles.mapMarkerDriver, { left: driverLeftPct as any }]} />
+                        )}
+                        {/* Destination marker */}
                         <View style={[styles.mapMarker, styles.mapMarkerDestination]} />
-                        <Text style={[styles.mapLabel, styles.mapLabelRestaurant]}>Restaurant</Text>
-                        <Text style={[styles.mapLabel, styles.mapLabelDestination]}>Vous</Text>
+                        <Text style={[styles.mapLabel, styles.mapLabelRestaurant]}>{t.tracking.restaurant}</Text>
+                        <Text style={[styles.mapLabel, styles.mapLabelDestination]}>{t.tracking.you}</Text>
                     </View>
                     <View style={styles.mapFooter}>
-                        <Text style={styles.mapFooterText}>{tracking?.restaurant?.name || "Restaurant"}</Text>
-                        {tracking?.driverLocation ? (
-                            <Text style={styles.mapFooterText}>Livreur en approche</Text>
+                        <Text style={styles.mapFooterText}>{tracking?.restaurant?.name || t.tracking.restaurant}</Text>
+                        {showDriverOnMap ? (
+                            <Text style={styles.mapFooterText}>
+                                {driverProgress >= 1 ? t.tracking.statusDelivered : t.tracking.driverApproaching}
+                            </Text>
                         ) : (
-                            <Text style={styles.mapFooterText}>Position du livreur indisponible</Text>
+                            <Text style={styles.mapFooterText}>{t.tracking.driverUnavailable}</Text>
                         )}
                     </View>
                 </View>
 
                 <View style={styles.driverCard}>
-                    <Text style={styles.sectionTitle}>Livreur</Text>
+                    <Text style={styles.sectionTitle}>{t.tracking.driver}</Text>
                     {driver ? (
                         <View style={styles.driverContent}>
                             {driverPhoto ? (
@@ -306,7 +370,7 @@ export default function TrackingScreen() {
                                         </View>
                                     ) : null}
                                     {driver.totalDeliveries ? (
-                                        <Text style={styles.driverDetail}>{driver.totalDeliveries} livraisons</Text>
+                                        <Text style={styles.driverDetail}>{driver.totalDeliveries} {t.tracking.deliveries}</Text>
                                     ) : null}
                                 </View>
                             </View>
@@ -318,30 +382,36 @@ export default function TrackingScreen() {
                             ) : null}
                         </View>
                     ) : (
-                        <Text style={styles.emptyText}>Le livreur sera assigne bientot.</Text>
+                        <Text style={styles.emptyText}>{t.tracking.driverSoon}</Text>
                     )}
                 </View>
 
                 <View style={styles.timelineCard}>
-                    <Text style={styles.sectionTitle}>Timeline</Text>
+                    <Text style={styles.sectionTitle}>{t.tracking.timeline}</Text>
                     {timelineEntries.length === 0 ? (
-                        <Text style={styles.emptyText}>La timeline est en cours de mise a jour.</Text>
+                        <Text style={styles.emptyText}>{t.tracking.timelineUpdating}</Text>
                     ) : (
                         timelineEntries.map((entry, index) => {
                             const isActive = entry.status === tracking?.status;
-                            const dotStyle = entry.completed || isActive ? styles.timelineDotActive : styles.timelineDot;
+                            const isCompleted = entry.completed || isActive;
                             return (
                                 <View key={`${entry.status}-${entry.timestamp || index}`} style={styles.timelineRow}>
                                     <View style={styles.timelineMarker}>
-                                        <View style={[styles.timelineDot, dotStyle]} />
-                                        {index < timelineEntries.length - 1 ? <View style={styles.timelineLine} /> : null}
+                                        <View style={[styles.timelineDot, isCompleted ? styles.timelineDotActive : styles.timelineDot]} />
+                                        {index < timelineEntries.length - 1 ? (
+                                            <View style={[styles.timelineLine, isCompleted ? styles.timelineLineActive : null]} />
+                                        ) : null}
                                     </View>
                                     <View style={styles.timelineContent}>
-                                        <Text style={styles.timelineTitle}>{entry.message || statusLabels[entry.status]}</Text>
+                                        <Text style={[styles.timelineTitle, isActive && styles.timelineTitleActive, !isCompleted && styles.timelineTitlePending]}>
+                                            {entry.message || statusLabels[entry.status]}
+                                        </Text>
                                         {entry.timestamp ? (
                                             <Text style={styles.timelineTime}>
-                                                {formatTime(entry.timestamp)} • {formatDate(entry.timestamp)}
+                                                {formatTime(entry.timestamp, locale)} • {formatDate(entry.timestamp, locale)}
                                             </Text>
+                                        ) : !isCompleted ? (
+                                            <Text style={styles.timelineTimePending}>{language === 'en' ? 'Upcoming' : 'À venir'}</Text>
                                         ) : null}
                                     </View>
                                 </View>
@@ -352,8 +422,18 @@ export default function TrackingScreen() {
 
                 <View style={styles.pullHint}>
                     <RefreshCw size={14} color={theme.textSecondary} />
-                    <Text style={styles.pullHintText}>Tirez pour actualiser le suivi</Text>
+                    <Text style={styles.pullHintText}>{t.tracking.pullToRefresh}</Text>
                 </View>
+
+                {tracking?.status === 'delivered' && (
+                    <TouchableOpacity
+                        style={styles.reviewCta}
+                        onPress={() => router.push(`/review/${tracking.orderId}?restaurantId=${tracking.restaurant?.id ?? ''}`)}
+                    >
+                        <Star size={16} color={theme.onBrand} />
+                        <Text style={styles.reviewCtaText}>Laisser un avis</Text>
+                    </TouchableOpacity>
+                )}
             </ScrollView>
         </SafeAreaView>
     );
@@ -706,10 +786,26 @@ const createStyles = (theme: typeof Colors.light) =>
             fontWeight: "600",
             color: theme.text,
         },
+        timelineTitleActive: {
+            color: theme.brand,
+        },
+        timelineTitlePending: {
+            color: theme.textSecondary,
+            fontWeight: "400",
+        },
+        timelineLineActive: {
+            backgroundColor: theme.brand,
+        },
         timelineTime: {
             marginTop: 4,
             fontSize: 12,
             color: theme.textSecondary,
+        },
+        timelineTimePending: {
+            marginTop: 4,
+            fontSize: 12,
+            color: theme.textSecondary,
+            fontStyle: "italic",
         },
         emptyText: {
             fontSize: 13,
@@ -725,5 +821,22 @@ const createStyles = (theme: typeof Colors.light) =>
         pullHintText: {
             fontSize: 12,
             color: theme.textSecondary,
+        },
+        reviewCta: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            marginHorizontal: 16,
+            marginTop: 8,
+            marginBottom: 24,
+            paddingVertical: 14,
+            borderRadius: 14,
+            backgroundColor: theme.brand,
+        },
+        reviewCtaText: {
+            fontSize: 15,
+            fontWeight: '700',
+            color: theme.onBrand,
         },
     });

@@ -9,6 +9,8 @@ import { Image } from "expo-image";
 import { ArrowLeft, Minus, Plus } from "lucide-react-native";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useCart } from "@/contexts/cart-context";
+import { useToast } from "@/components/toast-provider";
 
 export default function DishScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,6 +19,8 @@ export default function DishScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const styles = useMemo(() => createStyles(theme), [theme]);
+    const { addItem } = useCart();
+    const toast = useToast();
 
     useEffect(() => {
         loadDish();
@@ -68,7 +72,13 @@ export default function DishScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                    <TouchableOpacity style={styles.addButton}>
+                    <TouchableOpacity style={styles.addButton} onPress={() => {
+                        if (dish) {
+                            addItem(dish, quantity);
+                            toast.success(`${dish.name} ajouté au panier !`);
+                            router.back();
+                        }
+                    }}>
                         <Text style={styles.addButtonText}>Ajouter au panier</Text>
                     </TouchableOpacity>
                 </View>

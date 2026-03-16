@@ -3,7 +3,7 @@ import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, 
 
 import { CategoryList } from '@/components/category-list';
 import { RestaurantCard } from '@/components/restaurant-card';
-import { restaurantAPI } from '@/services/api';
+import { restaurantAPI, promoAPI } from '@/services/api';
 import { locationService } from '@/services/location';
 import { Restaurant } from '@/types';
 import { router } from 'expo-router';
@@ -11,31 +11,40 @@ import { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useI18n } from '@/contexts/i18n-context';
 
 export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [location, setLocation] = useState<string>('Locating...');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [promoBanner, setPromoBanner] = useState<{ code: string; description: string } | null>(null);
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { t } = useI18n();
 
   useEffect(() => {
-    // Fetch restaurants data
     loadData();
     getCurrentLocation();
+    promoAPI.getBanners().then(banners => {
+      if (banners.length > 0) setPromoBanner(banners[0]);
+    });
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [selectedCategory]);
 
   const loadData = async () => {
     try {
-      const data = await restaurantAPI.getRestaurants();
+      const filters = selectedCategory ? { cuisine: selectedCategory } : undefined;
+      const data = await restaurantAPI.getRestaurants(filters);
       setRestaurants(data);
     } catch (error) {
-      // log.error("Failed to load restaurants", error);
       Alert.alert("Error", "Failed to load restaurants");
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
   };
@@ -70,7 +79,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity style={styles.searchBar} onPress={() => router.push('/(tabs)/search')}>
         <Search size={20} color={theme.textMuted} />
-        <Text style={styles.searchPlaceholder}>Rechercher un restaurant...</Text>
+        <Text style={styles.searchPlaceholder}>{t.home.searchPlaceholder}</Text>
         </TouchableOpacity>
       </View>
 
@@ -80,20 +89,25 @@ export default function HomeScreen() {
         style={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.brand} />}
       >
-         <View style={styles.promoBanner}>
-          <Text style={styles.promoLabel}>Offre spéciale</Text>
-          <Text style={styles.promoTitle}>-30% sur votre première commande</Text>
-          <Text style={styles.promoCode}>Code: FOODIE30</Text>
-         </View>
+         {promoBanner && (
+           <View style={styles.promoBanner}>
+             <Text style={styles.promoLabel}>{t.home.specialOffer}</Text>
+             <Text style={styles.promoTitle}>{promoBanner.description}</Text>
+             <Text style={styles.promoCode}>Code: {promoBanner.code}</Text>
+           </View>
+         )}
 
-          <CategoryList />
+          <CategoryList
+            selected={selectedCategory}
+            onSelect={(cat) => setSelectedCategory(prev => prev === cat ? null : cat)}
+          />
 
           <View style={styles.section}>
-              <Text style={styles.sectionTitle}> A proximité</Text>
+              <Text style={styles.sectionTitle}>{t.home.nearby}</Text>
               {restaurants.map((restaurant) => (
                 <RestaurantCard key={restaurant.id} restaurant={restaurant} onPress={() => router.push(`/restaurant/${restaurant.id}`)} />
               ))}
-              {!loading && restaurants.length === 0 && <Text style={styles.emptyText}>Aucun restaurant trouvé</Text>}
+              {!loading && restaurants.length === 0 && <Text style={styles.emptyText}>{t.home.noRestaurantsFound}</Text>}
               {/* {loading && <Text>Chargement des restaurants...</Text>} */}
           </View>
          

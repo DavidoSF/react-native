@@ -13,6 +13,8 @@ import 'react-native-reanimated';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { ThemePreferenceProvider } from '@/contexts/theme-context';
 import { ToastProvider } from '@/components/toast-provider';
+import { CartProvider } from '@/contexts/cart-context';
+import { I18nProvider } from '@/contexts/i18n-context';
 import { useOffline } from '@/hooks/use-offline';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
@@ -65,11 +67,16 @@ function RootLayoutContent() {
   useEffect(() => {
     if (isLoading) return;
 
-    if (!isAuthenticated && isProtectedRoute) {
-      safeReplace('/login');
-    } else if (isAuthenticated && isAuthRoute) {
-      safeReplace('/(tabs)');
-    }
+    // Defer to ensure the navigator is fully mounted before dispatching
+    const timer = setTimeout(() => {
+      if (!isAuthenticated && isProtectedRoute) {
+        safeReplace('/login');
+      } else if (isAuthenticated && isAuthRoute) {
+        safeReplace('/(tabs)');
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [isLoading, isAuthenticated, isProtectedRoute, isAuthRoute, safeReplace]);
 
   useEffect(() => {
@@ -128,7 +135,6 @@ function RootLayoutContent() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="restaurant/[id]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="dish/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="cart" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="checkout" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="tracking/[orderId]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="review/[orderId]" options={{ presentation: 'modal' }} />
@@ -174,13 +180,17 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ToastProvider>
-          <AuthProvider>
-            <ThemePreferenceProvider>
-              <RootLayoutContent />
-            </ThemePreferenceProvider>
-          </AuthProvider>
-        </ToastProvider>
+        <I18nProvider>
+          <CartProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <ThemePreferenceProvider>
+                  <RootLayoutContent />
+                </ThemePreferenceProvider>
+              </AuthProvider>
+            </ToastProvider>
+          </CartProvider>
+        </I18nProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

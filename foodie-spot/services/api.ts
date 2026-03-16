@@ -39,8 +39,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     response => response,
     async error => {
-        if (error.response && error.response.status === 401) {
-            // clear both storage locations on unauthorized
+        const status = error.response?.status;
+        if (status === 401 || status === 403) {
+            // clear both storage locations on unauthorized / expired token
             await storage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
             try {
                 await auth.clearTokens();
@@ -186,6 +187,14 @@ export const restaurantAPI = {
 }
 
 export const promoAPI = {
+    async getBanners(): Promise<{ code: string; description: string; minOrder: number; type: string }[]> {
+        try {
+            const response = await api.get('/promos');
+            return response.data?.data || [];
+        } catch {
+            return [];
+        }
+    },
     async validate(params: { code: string; subtotal?: number; restaurantId?: string }) {
         const isConnected = await checkConnection();
         if (!isConnected) {
@@ -193,7 +202,7 @@ export const promoAPI = {
         }
         const response = await api.post('/promos/validate', params);
         return response.data;
-    }
+    },
 }
 
 export const userAPI = {
@@ -215,7 +224,18 @@ export const userAPI = {
     async getCurrentUser(): Promise<User | null> {
         return await storage.getItem(STORAGE_KEYS.USER);
     },
-    async toggleFavorite(restaurantId: string) {
+    async toggleFavorite(restaurantId: string): Promise<{ isFavorite: boolean }> {
+        const response = await api.post(`/user/favorites/${restaurantId}`);
+        return response.data;
+    },
+    async getFavorites(): Promise<Restaurant[]> {
+        try {
+            const response = await api.get('/user/favorites');
+            return response.data?.data || [];
+        } catch (error) {
+            log.error('Failed to fetch favorites', error);
+            return [];
+        }
     },
     async updateProfile(updates: Partial<User>): Promise<User> {
         try {
@@ -296,6 +316,19 @@ export const orderAPI = {
         } catch (error) {
             return (await cache.get<OrderTracking>(`order_track_${id}`)) || null;
         }
+    },
+    async createOrder(params: {
+        restaurantId: string;
+        items: { menuItemId: string; quantity: number }[];
+        deliveryAddress: object | string;
+        paymentMethod?: string;
+        promoCode?: string | null;
+        tip?: number;
+    }): Promise<Order> {
+        const response = await api.post('/orders', params);
+        const order = response.data?.data || response.data;
+        await cache.clear('orders');
+        return order;
     },
 }
 

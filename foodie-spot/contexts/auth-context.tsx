@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setIsAuthenticated(false);
       log.info('✅ [AuthContext] Logout completed');
-     router.replace('/login');
+     router.replace('/(auth)/login');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Échec de déconnexion';
       setError(message);

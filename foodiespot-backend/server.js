@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 4000;
 const NODE_ENV = process.env.NODE_ENV || "development";
 const JWT_SECRET = process.env.JWT_SECRET || "foodiespot-super-secret-jwt-key-change-in-production";
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "foodiespot-super-secret-refresh-key-change-in-production";
-const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || "1h";
+const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || "7d";
 const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || "7d";
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR 
@@ -62,6 +62,13 @@ let orders = loadJSON("orders.json");
 let reviews = loadJSON("reviews.json") || [];
 let favorites = loadJSON("favorites.json") || {};
 let pushTokens = loadJSON("push-tokens.json") || {};
+
+// Shared promo-code definitions
+const PROMO_CODES = {
+  BIENVENUE30: { code: "BIENVENUE30", discount: 30, type: "percent", minOrder: 0, maxDiscount: 15, description: "-30% sur votre 1ère commande" },
+  FOODIE10:    { code: "FOODIE10",    discount: 10, type: "percent", minOrder: 15, maxDiscount: 10, description: "-10% dès 15 € de commande" },
+  LIVRAISON:   { code: "LIVRAISON",   discount: 100, type: "delivery", minOrder: 25, description: "Livraison gratuite dès 25 €" },
+};
 
 // ===========================================
 // Express App Setup
@@ -621,6 +628,41 @@ app.get("/user/favorites", authenticateToken, (req, res) => {
   const userFavs = favorites[req.user.userId] || [];
   const favoriteRestaurants = restaurants.filter(r => userFavs.includes(r.id));
   res.json({ success: true, data: favoriteRestaurants });
+});
+
+// Routes - Promos
+app.get("/promos", (req, res) => {
+  const banners = Object.values(PROMO_CODES).map(({ code, description, minOrder, type }) => ({
+    code,
+    description,
+    minOrder,
+    type,
+  }));
+  res.json({ success: true, data: banners });
+});
+
+app.post("/promos/validate", authenticateToken, (req, res) => {
+  const { code, subtotal } = req.body;
+  if (!code) {
+    return res.status(400).json({ success: false, message: "Code promo requis" });
+  }
+  const promo = PROMO_CODES[code.toUpperCase()];
+  if (!promo) {
+    return res.status(404).json({ success: false, message: "Code promo invalide" });
+  }
+  const sub = Number(subtotal) || 0;
+  if (sub < promo.minOrder) {
+    return res.status(422).json({ success: false, message: `Commande minimum de ${promo.minOrder} € requise` });
+  }
+  let discount = 0;
+  let message = "";
+  if (promo.type === "percent") {
+    discount = Math.min((sub * promo.discount) / 100, promo.maxDiscount || Infinity);
+    message = `-${discount.toFixed(2)} €`;
+  } else if (promo.type === "delivery") {
+    message = "Livraison gratuite";
+  }
+  res.json({ success: true, data: { code: promo.code, type: promo.type, discount, message } });
 });
 
 app.post("/upload", authenticateToken, upload.single("image"), (req, res) => {
@@ -1190,12 +1232,7 @@ app.post("/orders", authenticateToken, (req, res) => {
   let discount = 0;
   let promoApplied = null;
   if (promoCode) {
-    const promoCodes = {
-      "BIENVENUE30": { discount: 30, type: "percent", minOrder: 20, maxDiscount: 15 },
-      "FOODIE10": { discount: 10, type: "percent", minOrder: 15, maxDiscount: 10 },
-      "LIVRAISON": { discount: 100, type: "delivery", minOrder: 25 }
-    };
-    const promo = promoCodes[promoCode.toUpperCase()];
+    const promo = PROMO_CODES[promoCode.toUpperCase()];
     if (promo && subtotal >= promo.minOrder) {
       if (promo.type === "percent") {
         discount = Math.min((subtotal * promo.discount) / 100, promo.maxDiscount || Infinity);
@@ -1395,11 +1432,11 @@ app.get("/orders/:id/track", authenticateToken, (req, res) => {
 // Simuler la progression d'une commande
 function simulateOrderProgress(orderId) {
   const statuses = [
-    { status: "confirmed", delay: 10000, message: "Commande confirmée par le restaurant" },
-    { status: "preparing", delay: 20000, message: "Préparation en cours" },
-    { status: "ready", delay: 40000, message: "Commande prête" },
-    { status: "picked_up", delay: 50000, message: "Récupérée par le livreur" },
-    { status: "delivering", delay: 60000, message: "En cours de livraison" },
+    { status: "confirmed", delay:  5000, message: "Commande confirmée par le restaurant" },
+    { status: "preparing", delay: 15000, message: "Préparation en cours" },
+    { status: "ready",     delay: 30000, message: "Commande prête" },
+    { status: "picked_up", delay: 45000, message: "Récupérée par le livreur" },
+    { status: "delivering",delay: 60000, message: "En cours de livraison" },
     { status: "delivered", delay: 90000, message: "Livrée" }
   ];
 

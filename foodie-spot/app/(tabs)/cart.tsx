@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCart } from '@/contexts/cart-context';
+import { useI18n } from '@/contexts/i18n-context';
 
 
 export default function CartScreen() {
@@ -13,6 +14,7 @@ export default function CartScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { t } = useI18n();
 
   const increment = (id: string) => {
     const item = items.find(i => i.dish.id === id);
@@ -27,15 +29,15 @@ export default function CartScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Panier</Text>
+        <Text style={styles.title}>{t.cart.title}</Text>
         <Text style={styles.subtitle}>{totalItems} article{totalItems !== 1 ? 's' : ''}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {items.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Votre panier est vide</Text>
-            <Text style={styles.emptySubtitle}>Ajoutez des plats pour continuer.</Text>
+            <Text style={styles.emptyTitle}>{t.cart.empty}</Text>
+            <Text style={styles.emptySubtitle}>{t.cart.emptySubtitle}</Text>
           </View>
         ) : (
           <View style={styles.card}>
@@ -43,7 +45,7 @@ export default function CartScreen() {
               <View key={item.dish.id} style={styles.lineItem}>
                 <View style={styles.lineInfo}>
                   <Text style={styles.lineName}>{item.dish.name}</Text>
-                  <Text style={styles.lineMeta}>{item.dish.price.toFixed(2)} € chacun</Text>
+                  <Text style={styles.lineMeta}>{item.dish.price.toFixed(2)} € {t.cart.each}</Text>
                 </View>
                 <View style={styles.quantityControls}>
                   <TouchableOpacity style={styles.qtyButton} onPress={() => decrement(item.dish.id)}>
@@ -61,17 +63,17 @@ export default function CartScreen() {
         )}
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Resume</Text>
+          <Text style={styles.sectionTitle}>{t.cart.summary}</Text>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Sous-total</Text>
+            <Text style={styles.summaryLabel}>{t.cart.subtotal}</Text>
             <Text style={styles.summaryValue}>{subtotal.toFixed(2)} €</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Livraison</Text>
+            <Text style={styles.summaryLabel}>{t.cart.delivery}</Text>
             <Text style={styles.summaryValue}>{deliveryFee.toFixed(2)} €</Text>
           </View>
           <View style={[styles.summaryRow, styles.summaryTotal]}>
-            <Text style={styles.summaryTotalLabel}>Total</Text>
+            <Text style={styles.summaryTotalLabel}>{t.cart.total}</Text>
             <Text style={styles.summaryTotalValue}>{total.toFixed(2)} €</Text>
           </View>
         </View>
@@ -83,7 +85,7 @@ export default function CartScreen() {
           onPress={() => router.push('/checkout')}
           disabled={items.length === 0}
         >
-          <Text style={styles.ctaText}>Passer la commande</Text>
+          <Text style={styles.ctaText}>{t.cart.placeOrder}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
