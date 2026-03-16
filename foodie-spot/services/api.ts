@@ -185,6 +185,17 @@ export const restaurantAPI = {
     }
 }
 
+export const promoAPI = {
+    async validate(params: { code: string; subtotal?: number; restaurantId?: string }) {
+        const isConnected = await checkConnection();
+        if (!isConnected) {
+            throw new Error('Offline: validation promo impossible');
+        }
+        const response = await api.post('/promos/validate', params);
+        return response.data;
+    }
+}
+
 export const userAPI = {
 
     async login(email: string, password: string): Promise<{ user: User; token: string }> {

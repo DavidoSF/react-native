@@ -1,28 +1,83 @@
 import { useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { promoAPI } from '@/services/api';
 
 export default function CheckoutScreen() {
   const [promoCode, setPromoCode] = useState('');
+  const [promoStatus, setPromoStatus] = useState<'idle' | 'loading' | 'valid' | 'error'>('idle');
+  const [promoMessage, setPromoMessage] = useState<string | null>(null);
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const orderIdRef = useRef(`demo-${Math.floor(1000 + Math.random() * 9000)}`);
   const restaurantIdRef = useRef('r1');
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const baseDeliveryFee = 2.5;
+  const subtotal = 23.0;
+  const isApplyDisabled = promoStatus === 'loading' || !promoCode.trim();
 
   const summary = useMemo(() => {
-    const subtotal = 23.0;
-    const deliveryFee = 2.5;
-    const discount = promoCode.trim() ? 2.0 : 0;
-    const total = subtotal + deliveryFee - discount;
+    const deliveryFee = baseDeliveryFee;
+    const discount = promoStatus === 'valid' ? promoDiscount : 0;
+    const total = Math.max(0, subtotal + deliveryFee - discount);
     return { subtotal, deliveryFee, discount, total };
-  }, [promoCode]);
+  }, [baseDeliveryFee, promoDiscount, promoStatus, subtotal]);
+
+  const handlePromoChange = (value: string) => {
+    setPromoCode(value);
+    if (promoStatus !== 'idle') {
+      setPromoStatus('idle');
+      setPromoMessage(null);
+      setPromoDiscount(0);
+      setAppliedPromoCode(null);
+    }
+  };
+
+  const handleApplyPromo = async () => {
+    const code = promoCode.trim();
+    if (!code) {
+      setPromoStatus('error');
+      setPromoMessage('Code promo requis');
+      setPromoDiscount(0);
+      setAppliedPromoCode(null);
+      return;
+    }
+
+    setPromoStatus('loading');
+    setPromoMessage(null);
+
+    try {
+      const response = await promoAPI.validate({ code, subtotal, restaurantId: restaurantIdRef.current });
+      const data = response?.data ?? response;
+      const normalizedCode = (data?.code || code).toUpperCase();
+      let discountAmount = 0;
+
+      if (data?.type === 'delivery') {
+        discountAmount = baseDeliveryFee;
+      } else {
+        discountAmount = Number(data?.discount ?? 0);
+      }
+
+      setPromoDiscount(discountAmount);
+      setPromoStatus('valid');
+      setAppliedPromoCode(normalizedCode);
+      setPromoMessage(data?.message || 'Code promo appliqué');
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || 'Code promo invalide';
+      setPromoStatus('error');
+      setPromoMessage(message);
+      setPromoDiscount(0);
+      setAppliedPromoCode(null);
+    }
+  };
 
   if (isConfirmed) {
     return (
@@ -96,13 +151,34 @@ export default function CheckoutScreen() {
                 placeholder="FOODIE10"
                 placeholderTextColor={theme.placeholder}
                 value={promoCode}
-                onChangeText={setPromoCode}
+                onChangeText={handlePromoChange}
                 autoCapitalize="characters"
+                editable={promoStatus !== 'loading'}
+                returnKeyType="done"
+                onSubmitEditing={handleApplyPromo}
               />
-            <TouchableOpacity style={styles.promoButton}>
-              <Text style={styles.promoButtonText}>Appliquer</Text>
+            <TouchableOpacity
+              style={[styles.promoButton, isApplyDisabled && styles.promoButtonDisabled]}
+              onPress={handleApplyPromo}
+              disabled={isApplyDisabled}
+            >
+              {promoStatus === 'loading' ? (
+                <ActivityIndicator size="small" color={theme.onBrand} />
+              ) : (
+                <Text style={styles.promoButtonText}>Appliquer</Text>
+              )}
             </TouchableOpacity>
           </View>
+          {!!promoMessage && (
+            <Text
+              style={[
+                styles.promoFeedback,
+                promoStatus === 'error' ? styles.promoFeedbackError : styles.promoFeedbackSuccess,
+              ]}
+            >
+              {promoStatus === 'valid' && appliedPromoCode ? `${appliedPromoCode} • ${promoMessage}` : promoMessage}
+            </Text>
+          )}
         </View>
 
         <View style={styles.card}>
@@ -215,10 +291,26 @@ const createStyles = (theme: typeof Colors.light) =>
       paddingHorizontal: 14,
       paddingVertical: 10,
       borderRadius: 12,
+      minWidth: 96,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    promoButtonDisabled: {
+      opacity: 0.7,
     },
     promoButtonText: {
       color: theme.onBrand,
       fontWeight: '600',
+    },
+    promoFeedback: {
+      marginTop: 6,
+      fontSize: 13,
+    },
+    promoFeedbackError: {
+      color: theme.danger,
+    },
+    promoFeedbackSuccess: {
+      color: theme.success,
     },
     summaryRow: {
       flexDirection: 'row',
